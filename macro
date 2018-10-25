@@ -1,0 +1,519 @@
+'Option Explicit
+
+Const MODULE_NAME As String = "modMail"
+
+'' Validate email address
+Public Function ValidateEmailAddress(ByVal strEmailAddress As String) As Boolean
+    On Error GoTo Catch
+    
+    Dim objRegExp As New RegExp
+    Dim blnIsValidEmail As Boolean
+    
+    objRegExp.IgnoreCase = True
+    objRegExp.Global = True
+    objRegExp.Pattern = "^([a-zA-Z0-9_\-\.]+)@[a-z0-9-]+(\.[a-z0-9-]+)*(\.[a-z]{2,3})$"
+    
+    blnIsValidEmail = objRegExp.test(strEmailAddress)
+    ValidateEmailAddress = blnIsValidEmail
+      
+    Exit Function
+    
+Catch:
+    ValidateEmailAddress = False
+    MsgBox "Module: " & MODULE_NAME & " - ValidateEmailAddress function" & vbCrLf & vbCrLf _
+        & "Error#:  " & Err.Number & vbCrLf & vbCrLf & Err.Description
+End Function
+
+Function WorksheetExists(sName As String) As Boolean
+    WorksheetExists = Evaluate("ISREF('" & sName & "'!A1)")
+End Function
+
+Function fields() As String
+
+    Sheets("Fields").Select
+    intLine = 7
+    fields = ""
+    strField = Cells(intLine, 2).Value
+    Do While strField <> "" 'read all lines until is empty
+        If Cells(intLine, 1).Value = "y" Then
+            fields = fields & strField & " "
+        End If
+        intLine = intLine + 1
+        strField = Cells(intLine, 2).Value
+    Loop
+    
+    
+End Function
+Function SortInput()
+
+ActiveWorkbook.Worksheets("Input").Sort.SortFields.Clear
+    ActiveWorkbook.Worksheets("Input").Sort.SortFields.Add Key:=Range("J2"), _
+        SortOn:=xlSortOnValues, Order:=xlAscending, DataOption:=xlSortNormal
+    With ActiveWorkbook.Worksheets("Input").Sort
+        .SetRange Range("J2:J65000")
+        .Header = xlNo
+        .MatchCase = False
+        .Orientation = xlTopToBottom
+        .SortMethod = xlPinYin
+        .Apply
+    End With
+    
+ActiveWorkbook.Worksheets("Input").Sort.SortFields.Clear
+    ActiveWorkbook.Worksheets("Input").Sort.SortFields.Add Key:=Range("B2"), _
+        SortOn:=xlSortOnValues, Order:=xlAscending, DataOption:=xlSortNormal
+    With ActiveWorkbook.Worksheets("Input").Sort
+        .SetRange Range("B2:B65000")
+        .Header = xlNo
+        .MatchCase = False
+        .Orientation = xlTopToBottom
+        .SortMethod = xlPinYin
+        .Apply
+    End With
+    
+    ActiveWorkbook.Worksheets("Input").Sort.SortFields.Clear
+    ActiveWorkbook.Worksheets("Input").Sort.SortFields.Add Key:=Range("N2"), _
+        SortOn:=xlSortOnValues, Order:=xlAscending, DataOption:=xlSortNormal
+    With ActiveWorkbook.Worksheets("Input").Sort
+        .SetRange Range("N2:N65000")
+        .Header = xlNo
+        .MatchCase = False
+        .Orientation = xlTopToBottom
+        .SortMethod = xlPinYin
+        .Apply
+    End With
+
+
+End Function
+
+Function RemoveDuplicateInputs()
+
+    Sheets("Input").Select
+   'remove duplicates userIDs first query
+    ActiveWindow.SmallScroll Down:=-6
+    ActiveSheet.Range("$B$2:$B$65000").RemoveDuplicates Columns:=1, Header:=xlYes
+    ActiveWindow.SmallScroll ToRight:=-2
+    
+    
+       'remove duplicates userIDs second query
+    ActiveWindow.SmallScroll Down:=-6
+    ActiveSheet.Range("$J$2:$J$65000").RemoveDuplicates Columns:=1, Header:=xlYes
+    ActiveWindow.SmallScroll ToRight:=-2
+    
+    
+       'remove duplicates GROUPS
+    ActiveWindow.SmallScroll Down:=-6
+    ActiveSheet.Range("$N$2:$N$65000").RemoveDuplicates Columns:=1, Header:=xlYes
+    ActiveWindow.SmallScroll ToRight:=-2
+    
+End Function
+
+
+Sub run1()
+    Dim wsh As Object
+    Dim waitOnReturn As Boolean: waitOnReturn = True
+    Dim windowStyle As Integer: windowStyle = 1
+    
+    Set wsh = VBA.CreateObject("WScript.Shell")
+    
+    'On Error Resume Next
+    'Sheets.Add.Name = "Output"
+    'Cells.Select
+    'Selection.ClearContents
+    
+    'Dim WS As Worksheet
+    'Set WS = Sheets.Add
+    'Sheets.Add.Name = "Output"
+    
+    Sheets("config").Select
+    Location = Cells(7, 3).Value ' picking the path where the executable files are saved
+        
+    Sheets("Output").Select
+    Cells.Select
+    Selection.ClearContents
+        
+    Sheets("Input").Select
+    Range("B2").Select
+    intLine = 2
+    userRaw = Cells(intLine, 2).Value
+    If InStr(1, "@", userRaw) = 0 Then
+        user = "sAMAccountName=" & userRaw
+    Else
+        user = "mail=" & userRaw
+    End If
+    
+           
+    Do While user <> ""
+        If intLine > 2 Then 'when have more 1 row/outputs to add
+            extraparam = " -nocsvheader" 'will remove the need to have header when have more 1 row/outputs to add
+        End If
+        params = Location & "adfind.exe -f " & Chr(34) & "&(objectCategory=person)(" & user & ")" & Chr(34) & " -tdca -samdc " & extraparam & " -csvdelim , -csvxl " & fields & " | clip" 'last parameter is custom made for GS so only works on GS Active Directory/LDAP
+        'sAMAccountName sn  givenname l houseidentifier descriptions  whencreated whenChanged pwdLastSet lastLogon lastLogonTimestamp sAMAccountType useraccountcontrol mail GsMatriculeDRH
+        MsgBox (params)
+        
+        'adfind -f "&(objectCategory=person)(sAMAccountName=ABNI)" -tdca -samdc -csvxl sn l descriptions givenname houseidentifier whencreated whenChanged useraccountcontrol lastLogon pwdLastSet sAMAccountName sAMAccountType lastLogonTimestamp mail GsMatriculeDRH
+        wsh.run "cmd.exe /S /C " & params, windowStyle, waitOnReturn 'launch the command line with the ADFind command with flags
+        
+        Sheets("Output").Select
+        If intLine > 2 Then 'when have more than one user to search
+            Cells(intLine, 1).Select
+            Else: Cells(intLine - 1, 1).Select
+        End If
+        ActiveSheet.Paste ' paste from memory/clipboard as command line output was save to |clip
+        
+        Sheets("Input").Select
+        intLine = intLine + 1
+        user = Cells(intLine, 2).Value
+        'If user = "" Then
+        '    MsgBox ("Query Completed: " & intLine - 2 & " records produced.")
+        'End If
+    Loop
+End Sub
+
+Sub run2() 'search by Cost Centre
+    Dim wsh As Object
+    Dim waitOnReturn As Boolean: waitOnReturn = True
+    Dim windowStyle As Integer: windowStyle = 1
+    
+    Set wsh = VBA.CreateObject("WScript.Shell")
+    
+    Sheets("config").Select
+    Location = Cells(7, 3).Value ' picking the path where the executable files are saved
+    
+    Sheets("Input").Select
+    Range("F2").Select
+    intLine = 2
+    CC = Cells(intLine, 6).Value '6 is column F
+       
+    Do While CC <> ""
+        'If intLine > 2 Then 'when have more 1 row/outputs to add
+        '    extraparam = " -nocsvheader" 'will remove the need to have header when have more 1 row/outputs to add
+        'End If
+        params = Location & "adfind.exe -f " & Chr(34) & "&(objectCategory=person)(houseIdentifier=" & CC & ")" & Chr(34) & " -tdca -samdc " & extraparam & " -csvdelim , -csvxl sAMAccountName sn  givenname l houseidentifier descriptions  whencreated whenChanged pwdLastSet lastLogon lastLogonTimestamp sAMAccountType useraccountcontrol mail GsMatriculeDRH | clip" 'last parameter is custom made for GS so only works on GS Active Directory/LDAP
+        'MsgBox (params)
+        
+        'adfind -f "&(objectCategory=person)(sAMAccountName=ABNI)" -tdca -samdc -csvxl sn l descriptions givenname houseidentifier whencreated whenChanged useraccountcontrol lastLogon pwdLastSet sAMAccountName sAMAccountType lastLogonTimestamp mail GsMatriculeDRH
+        wsh.run "cmd.exe /S /C " & params, windowStyle, waitOnReturn 'launch the command line with the ADFind command with flags
+                
+        
+        'Sheets("Output").Select
+        'Dim WS As Worksheet
+        'Set WS = Sheets.Add
+        Sheets.Add.Name = CC
+        Sheets(CC).Select
+        'If intLine > 2 Then 'when have more than one user to search
+        Cells(1, 1).Select
+        '    Else: Cells(intLine - 1, 1).Select
+        'End If
+        ActiveSheet.Paste ' paste from memory/clipboard as command line output was save to |clip
+        
+        
+        Sheets("Input").Select
+        intLine = intLine + 1
+        CC = Cells(intLine, 6).Value
+        
+         If CC = "" Then
+            MsgBox ("Process finished: " & intLine - 2 & " cost centres queried. See tabs created.")
+         End If
+    Loop
+
+End Sub
+
+Sub run3() 'search by user given all Group Names
+    Dim wsh As Object
+    Dim waitOnReturn As Boolean: waitOnReturn = True
+    Dim windowStyle As Integer: windowStyle = 1
+    Dim arrResult() As String
+    Dim intArr, ArrayLen As Integer
+    Dim user As String
+    
+        
+    Set wsh = VBA.CreateObject("WScript.Shell")
+    
+    Sheets("config").Select
+    Location = Cells(7, 3).Value ' picking the path where the executable files are saved
+    
+    Sheets("Input").Select
+    Range("J2").Select
+    intLine = 2
+    user = Trim(Cells(intLine, 10).Value)
+
+       
+    Do While user <> ""
+        'If intLine > 2 Then 'when have more 1 row/outputs to add
+        '    extraparam = " -nocsvheader" 'will remove the need to have header when have more 1 row/outputs to add
+        'End If
+        fieldx = "sAMAccountName sn givenname l houseidentifier descriptions  whencreated whenChanged pwdLastSet lastLogon lastLogonTimestamp sAMAccountType useraccountcontrol mail GsMatriculeDRH" ' remove this line for custom fields and replace FieldX by Fields in the line below so the function can be called
+        params = Location & "adfind.exe -f " & Chr(34) & "&(objectCategory=person)(sAMAccountName=" & user & ")" & Chr(34) & " -tdca -samdc " & extraparam & " -csvdelim ; -csvxl " & fieldx & " memberof | clip" 'last parameter is custom made for GS so only works on GS Active Directory/LDAP
+        
+        'MsgBox (params)
+        
+        'adfind -f "&(objectCategory=person)(sAMAccountName=ABNI)" -tdca -samdc -csvxl sn l descriptions givenname houseidentifier whencreated whenChanged useraccountcontrol lastLogon pwdLastSet sAMAccountName sAMAccountType lastLogonTimestamp mail GsMatriculeDRH
+        wsh.run "cmd.exe /S /C " & params, windowStyle, waitOnReturn 'launch the command line with the ADFind command with flags
+        
+        
+        'if the sheet name already exist will ask what to do - to check if sheetname already exist and gives option to user or add a date+time to the output sheet
+        If WorksheetExists(user) = True Then
+            OutPut = MsgBox("Sheet already exists. Click YES to replace content, Click NO for creating a new Sheet? ", vbYesNoCancel, "Example of vbYesNoCancel")
+            If OutPut = 6 Then
+                'Output = 6(Yes)
+                Sheets(user).Select
+                Cells.Select
+                election.ClearContents
+                strSheetName = user
+                ElseIf OutPut = 7 Then
+                'Output = 7(No) then create a new sheet
+                
+                mydate = Replace(Date, "/", "_")
+                mytime = Replace(Time, ":", "_")
+                MsgBox (mydate & mytime)
+                strSheetName = user & "_" & mydate & "_" & mytime
+            Else
+                'Output = 2(Cancel)
+                Exit Sub
+            End If
+        Else
+            strSheetName = user
+            
+        End If
+        '---------------- create new sheet --------------------------
+        Sheets.Add.Name = strSheetName
+        
+        
+        Sheets(strSheetName).Select
+        
+        'If intLine > 2 Then 'when have more than one user to search
+        Cells(1, 1).Select
+        '    Else: Cells(intLine - 1, 1).Select
+        'End If
+        ActiveSheet.Paste ' paste from memory/clipboard as command line output was save to |clip
+                       
+        '------------------------------- Command to obtain all the groups a user is part of ---------------------------------------------------
+        params = "cmd.exe /S /C " & Location & "dsquery.exe user -samid " & user & " | " & Location & "dsget.exe user -memberof -expand |clip"
+        wsh.run params, windowStyle, waitOnReturn ' launch the command
+        
+        IntCol = 0
+        intArr = 0
+        
+        If Cells(1, 2) = "" Then ' the value pasted was all saved to A1 cell then needs splitting using an couple of Arrays, one for header and the other for the values
+            arrResult = Split(Range("A1").Value, Chr(34))
+            arrResult2 = Split(Range("A2").Value, Chr(34))
+            ArrayLen = UBound(arrResult) - LBound(arrResult)
+            For intArr = 0 To ArrayLen
+                If arrResult(intArr) <> ";" Then
+                    IntCol = IntCol + 1
+                    Cells(1, IntCol).Value = arrResult(intArr)
+                    Cells(2, IntCol).Value = arrResult2(intArr)
+                End If
+            Next
+        End If
+        
+        '------------- now adding the value of the members output----------------
+        IntCol = 1
+        strColumn = Cells(1, IntCol).Value
+        Do While strColumn <> "memberof"
+            IntCol = IntCol + 1
+            strColumn = Cells(1, IntCol).Value
+        Loop
+        'Range("V2").Select 'equivalent to column 22 row 2
+        Cells(2, IntCol).Select
+        ActiveSheet.Paste
+                
+        Sheets("Input").Select
+        intLine = intLine + 1
+        user = Cells(intLine, 10).Value
+        
+    Loop
+End Sub
+
+Sub run4()
+    Dim wsh As Object
+    Dim waitOnReturn As Boolean: waitOnReturn = True
+    Dim windowStyle As Integer: windowStyle = 1
+    Dim group As String
+    Dim groupshort As String
+        
+    Set wsh = VBA.CreateObject("WScript.Shell")
+    
+    Sheets("Config").Select
+    Location = Cells(7, 3).Value
+    
+    Sheets("Input").Select
+    'Range("N2").Select
+    intLine = 2
+    group = Cells(intLine, 14).Value
+    groupshort = group
+    'Mid(Group, 4, InStr(1, Group, ",") - 4)
+       
+    Do While group <> ""
+        'If intLine > 2 Then 'when have more 1 row/outputs to add
+        '    extraparam = " -nocsvheader" 'will remove the need to have header when have more 1 row/outputs to add
+        'End If
+        
+        If Left(group, 4) = Chr(34) & "CN=" Or Left(group, 3) = "CN=" Then 'meaning the the full qualifier group was input
+            groupshort = Mid(group, 4, InStr(1, group, ",") - 4)
+        Else 'only the group name was input
+            groupshort = group
+        End If
+        
+        
+        params = Location & "adfind.exe -default -f name=" & groupshort & " member -list | " & Location & "adfind.exe -tdca -samdc -csvdelim , -csvxl " & fields & " | clip" 'last parameter is custom made for GS so only works on GS Active Directory/LDAP
+                
+        'will also work showing only userIDs with:
+        'params = Location & "dsget.exe group " & Group & " -members -expand | clip"
+        
+        'MsgBox (params)
+        
+        wsh.run "cmd.exe /S /C " & params, windowStyle, waitOnReturn 'launch the command line with the ADFind command with flags
+        
+        
+       'groupshort = Mid(Group, 4, InStr(1, Group, ",") - 4)
+       ' MsgBox (groupshort)
+        
+        If WorksheetExists(groupshort) = True Then
+            OutPut = MsgBox("Sheet " & groupshort & " already exists. Click YES to replace content, Click NO for creating a new Sheet? ", vbYesNoCancel, "Example of vbYesNoCancel")
+            If OutPut = 6 Then
+                'Output = 6(Yes)
+                Sheets(groupshort).Select
+                Cells.Select
+                election.ClearContents
+                strSheetName = groupshort
+                ElseIf OutPut = 7 Then
+                'Output = 7(No) then create a new sheet
+                'mydate = Replace(WorksheetFunction.Date(), "/", "_")
+                mydate = Replace(Date, "/", "_")
+                mytime = Replace(Time, ":", "_")
+                MsgBox (mydate & mytime)
+                strSheetName = groupshort & "_" & mydate & "_" & mytime
+            Else
+                'Output = 2(Cancel)
+                Exit Sub
+            End If
+        Else
+            strSheetName = groupshort
+            
+        End If
+
+        Sheets.Add.Name = strSheetName
+        Sheets(strSheetName).Select
+        
+        'Sheets.Add.Name = groupshort
+        'Sheets(groupshort).Select
+        'If intLine > 2 Then 'when have more than one user to search
+        Cells(1, 1).Select
+        '    Else: Cells(intLine - 1, 1).Select
+        'End If
+        ActiveSheet.Paste ' paste from memory/clipboard as command line output was save to |clip
+        
+                        
+        Sheets("Input").Select
+        intLine = intLine + 1
+        group = Cells(intLine, 14).Value
+        'groupshort = Mid(Group, 4, InStr(1, Group, ",") - 4)
+        
+    Loop
+End Sub
+
+Sub PopulateLDAPFields()
+    Dim wsh As Object
+    Dim waitOnReturn As Boolean: waitOnReturn = True
+    Dim windowStyle As Integer: windowStyle = 1
+    
+    Set wsh = VBA.CreateObject("WScript.Shell")
+    
+    Sheets("Config").Select
+    Location = Cells(7, 3).Value
+    
+    UserId = (Environ$("Username"))  'gathers current username to populate all fields available
+
+    MsgBox (UserId)
+    
+    params = Location & "adfind.exe -f " & Chr(34) & "&(objectCategory=person)(sAMAccountName=" & UserId & ")" & Chr(34) & " -tdca -samdc | clip" 'needed adding chr(34) which are the double quotes because it failed otherwise.
+    'MsgBox (params)
+    wsh.run "cmd.exe /S /C " & params, windowStyle, waitOnReturn 'launch the command line with the ADFind command with flags
+    
+    Sheets("Fields").Select
+    Cells(2, 4).Select
+    ActiveSheet.Paste
+    
+    strcellvalue = Cells(7, 4).Value 'this is the first field to display
+    intLine = 7
+    
+    Do While strcellvalue <> ""
+        intColonPos = InStr(1, strcellvalue, ":")
+        strFieldname = Mid(strcellvalue, 2, intColonPos - 2)
+        strfieldvalue = Mid(strcellvalue, intColonPos + 1, Len(strcellvalue) - Len(strFieldname) - 2)
+        
+        'MsgBox (strFieldvalue)
+        Cells(intLine, 2).Value = strFieldname
+        Cells(intLine, 3).Value = strfieldvalue
+        intLine = intLine + 1
+        strcellvalue = Cells(intLine, 4).Value
+    Loop
+    
+    
+End Sub
+
+Sub ListEmail()
+    Dim wsh As Object
+    Dim waitOnReturn As Boolean: waitOnReturn = True
+    Dim windowStyle As Integer: windowStyle = 1
+    
+    Set wsh = VBA.CreateObject("WScript.Shell")
+    
+      
+    Sheets("config").Select
+    Location = Range("C7").Value ' picking the path where the executable files are saved
+    RemoveDups = Range("C13").Value
+    SortUsrs = Range("C13").Value
+    
+    If RemoveDups = "yes" Then
+    '    RemoveDuplicateInputs
+    End If
+    
+    If SortUsrs = "yes" Then
+    '    SortInput
+    End If
+    
+        
+    Sheets("Output").Select
+    Cells.Select
+    Selection.ClearContents
+    
+            
+    Sheets("Input").Select
+    Range("R2").Select
+    intLine = 2                 'first line for date output , second line for headers and third line onwards for data.
+
+    strEmail = Cells(intLine, 2).Value  ' load first user
+           
+    Do While strEmail <> ""
+        If intLine > 2 Then 'when have more 1 row/outputs to add
+            extraparam = " -nocsvheader" 'will remove the need to have header when have more 1 row/outputs to add
+        End If
+        fieldsxx = "sAMAccountName sn  givenname l mail"
+        params = Location & "adfind.exe -f " & Chr(34) & "&(objectCategory=person)(mail=" & strEmail & ")" & Chr(34) & " -tdca -samdc " & extraparam & " -csvdelim , -csvxl " & fieldsxx & " | clip" 'last parameter is custom made for GS so only works on GS Active Directory/LDAP
+        'sAMAccountName sn  givenname l houseidentifier descriptions  whencreated whenChanged pwdLastSet lastLogon lastLogonTimestamp sAMAccountType useraccountcontrol mail GsMatriculeDRH
+        'MsgBox (params)
+        
+        'adfind -f "&(objectCategory=person)(sAMAccountName=ABNI)" -tdca -samdc -csvxl sn l descriptions givenname houseidentifier whencreated whenChanged useraccountcontrol lastLogon pwdLastSet sAMAccountName sAMAccountType lastLogonTimestamp mail GsMatriculeDRH
+        wsh.run "cmd.exe /S /C " & params, windowStyle, waitOnReturn 'launch the command line with the ADFind command with flags
+        
+        DateAndTime = Sheets("Input").Range("P1").Value ' capturing the value of the NOW() formula - date and time
+        Sheets("Output").Select
+        Cells(1, 1).Value = DateAndTime
+        
+        If intLine > 2 Then 'when have more than one user to search
+            Cells(intLine, 1).Select
+            Else: Cells(intLine, 1).Select
+        End If
+        ActiveSheet.Paste ' paste from memory/clipboard as command line output was save to |clip
+        
+        Sheets("Input").Select
+        intLine = intLine + 1
+        strEmail = Cells(intLine, 2).Value
+        If strEmail = "" Then
+            MsgBox ("Query Completed: " & intLine - 2 & " records produced.")
+        End If
+    Loop
+End Sub
+
