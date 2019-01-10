@@ -1,0 +1,166 @@
+<html>
+
+<head>
+<title>ADFind GUI</title>
+<HTA:APPLICATION
+APPLICATIONNAME="ADFind Application"
+SCROLL="yes"
+SINGLEINSTANCE="no"
+WINDOWSTATE="normal">
+
+<script language="VBScript"> 
+
+ctrlsHTML = "Search by User ID:  <input type=" & Chr(34) & "text" & Chr(34) & "name=" & Chr(34) & "Textbox" & Chr(34) & "size=" & Chr(34) & "12" & Chr(34) & ">"
+ctrlsHTML2 = "Search by Email:  <input type=" & Chr(34) & "text" & Chr(34) & "name=" & Chr(34) & "Textbox2" & Chr(34) & "size=" & Chr(34) & "45" & Chr(34) & ">"
+ctrlsHTML3 = "Search User to get group names:  <input type=" & Chr(34) & "text" & Chr(34) & "name=" & Chr(34) & "Textbox3" & Chr(34) & "size=" & Chr(34) & "12" & Chr(34) & ">"
+ctrlsHTML4 = "Search by Family name:  <input type=" & Chr(34) & "text" & Chr(34) & "name=" & Chr(34) & "Textbox4" & Chr(34) & "size=" & Chr(34) & "45" & Chr(34) & ">"
+ctrlsHTML5 = "Search Group to get members:  <input type=" & Chr(34) & "text" & Chr(34) & "name=" & Chr(34) & "Textbox5" & Chr(34) & "size=" & Chr(34) & "45" & Chr(34) & ">"
+
+EnableDisableSwitch = 0
+
+'********************************************************************************
+
+Sub window_Onload
+ControlsArea.innerHTML = ctrlsHTML
+ControlsArea2.innerHTML = ctrlsHTML2
+ControlsArea3.innerHTML = ctrlsHTML3
+ControlsArea4.innerHTML = ctrlsHTML4
+ControlsArea5.innerHTML = ctrlsHTML5
+
+Textbox.value = ""
+Textbox2.value = "@willistowerswatson.com"
+Textbox3.value = ""
+Textbox4.value = ""
+Textbox5.value = ""
+End Sub
+
+Sub ClearWindow
+DataArea.InnerHTML = ""
+
+End Sub
+
+Sub ListUser
+	'Dim wsh As Object
+    'Dim waitOnReturn As Boolean: waitOnReturn = True
+    'Dim windowStyle As Integer: windowStyle = 1
+    Set objShell = CreateObject("Wscript.Shell")
+	
+	user=Textbox.value
+	fields=" sn l descriptions givenname houseidentifier whencreated whenChanged useraccountcontrol lastLogon pwdLastSet sAMAccountName sAMAccountType lastLogonTimestamp mail "
+	params = "adfind.exe -f " & Chr(34) & "&(objectCategory=person)(sAMAccountName=" & user & ")" & Chr(34) & " -tdca -samdc -csvdelim , -csvxl " & fields & " > " & user & ".csv"
+	If user = "" Then
+		MsgBox ("You must enter a value!")
+	Else
+		objShell.Run "cmd.exe /S /C " & params, 1, True
+	End If
+	MsgBox ("Search Completed, file " & user & ".csv created (if empty process failed)")
+
+End Sub
+    
+Sub ListEmail
+	Set objShell = CreateObject("Wscript.Shell")
+	
+	email=Textbox2.value
+	email2=Left(email,InStr(1,email,"@")-1)
+	
+	fields=" sn l descriptions givenname houseidentifier whencreated whenChanged useraccountcontrol lastLogon pwdLastSet sAMAccountName sAMAccountType lastLogonTimestamp mail "
+	params = "adfind.exe -f " & Chr(34) & "&(objectCategory=person)(mail=" & email & ")" & Chr(34) & " -tdca -samdc -csvdelim , -csvxl " & fields & " > " & email2 & ".csv"
+	If email2 = "" Then
+		MsgBox ("You must enter a value!")
+	Else
+		objShell.Run "cmd.exe /S /C " & params, 1, True
+	End If
+	MsgBox ("Search Completed, file " & email2 & ".csv created (if empty process failed)")
+
+End Sub
+
+Sub ListUserGroup
+	Set objShell = CreateObject("Wscript.Shell")
+	
+	user=Textbox3.value
+	fields=" sn l descriptions givenname houseidentifier whencreated whenChanged useraccountcontrol lastLogon pwdLastSet sAMAccountName sAMAccountType lastLogonTimestamp mail "
+	params = "cmd.exe /S /C dsquery.exe user -samid " & user & " | dsget.exe user -memberof -expand > " & user & "-groups.csv"
+	If user = "" Then
+		MsgBox ("You must enter a value!")
+	Else
+		objShell.Run "cmd.exe /S /C " & params, 1, True
+	End If
+	
+	MsgBox ("Search Completed, file " & user & ".csv created (if empty process failed)")
+
+End Sub
+
+Sub FindUserID
+	Set objShell = CreateObject("Wscript.Shell")
+	
+	SN=Textbox4.value
+	fields=" sn l descriptions givenname houseidentifier whencreated whenChanged useraccountcontrol lastLogon pwdLastSet sAMAccountName sAMAccountType lastLogonTimestamp mail "
+	params = "adfind.exe -f " & Chr(34) & "&(objectCategory=person)(sn=" & SN & ")" & Chr(34) & " -tdca -samdc -csvdelim , -csvxl " & fields & " > " & SN & ".csv"
+	If SN = "" Then
+		MsgBox ("You must enter a value!")
+	Else
+		objShell.Run "cmd.exe /S /C " & params, 1, True
+	End If
+	
+	MsgBox ("Search Completed, file " & SN & ".csv created (if empty process failed)")
+
+End Sub
+
+Sub ListGroupMembers
+	Set objShell = CreateObject("Wscript.Shell")
+	
+	Group=Textbox5.value
+	If Left(group, 3) = "CN=" Or Mid(group, 2, 3) = "CN=" Then 'if the full DN is entered make it short name
+            groupshort = Mid(group, 4, InStr(1, group, ",") - 4)
+    Else
+            groupshort = group
+    End If
+	
+	fields=" sn l descriptions givenname houseidentifier whencreated whenChanged useraccountcontrol lastLogon pwdLastSet sAMAccountName sAMAccountType lastLogonTimestamp mail "
+	params = "adfind.exe -default -f name=" & groupshort & " member -list | adfind.exe -tdca -samdc -csvdelim , -csvxl " & fields & " > " & groupshort & ".csv"
+	
+	If groupshort = "" Then
+		MsgBox ("You must enter a value!")
+	Else
+		objShell.Run "cmd.exe /S /C " & params, 1, True
+	End If
+	MsgBox ("Search Completed, file " & groupshort & ".csv created (if empty process failed)")
+
+End Sub
+
+
+</script>
+
+</head> 
+
+
+<body>
+<p>
+<span id = "ControlsArea"></span>
+</p>
+<button onclick="ListUser">Run</button> <p>
+<p>
+<span id = "ControlsArea2"></span>
+</p>
+<button onclick="ListEmail">Run</button> <p>
+<p>
+<span id = "ControlsArea3"></span>
+</p>
+<button onclick="ListUserGroup">Run</button> <p>
+<p>
+<span id = "ControlsArea4"></span>
+</p>
+<button onclick="FindUserID">Run</button> <p>
+<p>
+<span id = "ControlsArea5"></span>
+</p>
+<button onclick="ListGroupMembers">Run</button> <p>
+<p>
+
+<p>
+<span id = "DataArea"></span>
+</p>
+
+</body>
+
+</html>
