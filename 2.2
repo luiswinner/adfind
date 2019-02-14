@@ -128,7 +128,7 @@ Sub ListUser
 	'MsgBox(fieldsIn)
 	fields=" sAMAccountName sAMAccountType sn givenname mail l description houseidentifier department W-DepartmentLevel1 W-DepartmentLevel2 W-DepartmentLevel3 W-DepartmentLevel4 W-DepartmentLevel5 W-EmployeeStatus company useraccountcontrol whencreated whenChanged lastLogon lastLogonTimestamp pwdLastSet accountExpires "
 	'params = "dsquery user -samid " & user & " | adfind -tdcas -samdc -csvdelim , -csvxl " & fields & " > " & user & ".csv"
-	'adfind -b dc=internal,dc=towerswatson,dc=com -f "&(objectCategory=person)(sAMAccountName=tina9101)"
+	
 	
 	params = "adfind.exe " & FuncDom & " -f " & Chr(34) & "&(objectCategory=person)(sAMAccountName=" & user & ")" & Chr(34) & " -tdcas -samdc -csvdelim , -csvxl " & fieldsin & " > " & user & ".csv"
 	If user = "" Then
