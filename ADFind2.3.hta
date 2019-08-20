@@ -1,0 +1,469 @@
+<html>
+
+<head>
+<title>ADFind GUI</title>
+<HTA:APPLICATION
+APPLICATIONNAME="ADFind Application"
+SCROLL="yes"
+SINGLEINSTANCE="no"
+WINDOWSTATE="normal">
+
+<script language="VBScript"> 
+
+ctrlsHTML = "Search by User ID:  <input type=" & Chr(34) & "text" & Chr(34) & "name=" & Chr(34) & "Textbox" & Chr(34) & "size=" & Chr(34) & "12" & Chr(34) & "><br> (enter * for all users, this will take a while).<br>"
+ctrlsHTML = ctrlsHTML & "<button onclick="& Chr(34) & "ListUser" & Chr(34) & ">Search</button><br><br>" 
+ctrlsHTML = ctrlsHTML & "Search by Email:  <input type=" & Chr(34) & "text" & Chr(34) & "name=" & Chr(34) & "Textbox2" & Chr(34) & "size=" & Chr(34) & "45" & Chr(34) & "><br>"
+ctrlsHTML = ctrlsHTML & "<button onclick=" & Chr(34) & "ListEmail" & Chr(34) & ">Search</button><br><br>" 
+ctrlsHTML = ctrlsHTML & "Search User to get group names:  <input type=" & Chr(34) & "text" & Chr(34) & "name=" & Chr(34) & "Textbox3" & Chr(34) & "size=" & Chr(34) & "12" & Chr(34) & "><br>"
+ctrlsHTML = ctrlsHTML & "<button onclick=" & Chr(34) & "ListUserGroup" & Chr(34) & ">Search</button><br><br>"
+ctrlsHTML = ctrlsHTML & "Search by Family name:  <input type=" & Chr(34) & "text" & Chr(34) & "name=" & Chr(34) & "Textbox4" & Chr(34) & "size=" & Chr(34) & "45" & Chr(34) & "><br>"
+ctrlsHTML = ctrlsHTML & "<button onclick=" & Chr(34) & "FindUserID" & Chr(34) & ">Search</button><br><br>"
+ctrlsHTML = ctrlsHTML & "Search Group to get members:  <input type=" & Chr(34) & "text" & Chr(34) & "name=" & Chr(34) & "Textbox5" & Chr(34) & "size=" & Chr(34) & "45" & Chr(34) & "><br>"
+ctrlsHTML = ctrlsHTML & "<button onclick=" & Chr(34) & "ListGroupMembers" & Chr(34) & ">Search</button><br><br>"
+ctrlsHTML = ctrlsHTML & "<br>For on-screen queries:<br>"
+ctrlsHTML = ctrlsHTML & "<button onclick=" & Chr(34) & "OnScreenQueries" & Chr(34) & ">Search</button><br>"
+
+
+
+EnableDisableSwitch = 0
+
+'***************************************************************************************************************************************************************'
+Sub onLoad()
+  document.GetElementById("panel1").style.display = "block"
+end sub
+
+Sub window_Onload
+
+ControlsArea.innerHTML = ctrlsHTML
+
+Textbox.value = ""
+Textbox2.value = "@willistowerswatson.com"
+Textbox3.value = ""
+Textbox4.value = ""
+Textbox5.value = ""
+End Sub
+'----------------------------------------------------------------------------------------------------------------------------------------------------------------------------'
+'----------------------------------------------------------------------------------------------------------------------------------------------------------------------------'
+Sub ClearWindow
+	DataArea.InnerHTML = ""
+End Sub
+'----------------------------------------------------------------------------------------------------------------------------------------------------------------------------'
+'----------------------------------------------------------------------------------------------------------------------------------------------------------------------------'
+Sub selPanel(number)
+ i = 1
+ do while i <= 4
+     if i = number then
+    document.GetElementById("panel" & Cstr(i)).style.display = "block"
+    'document.GetElementById("tab" & Cstr(i)).className = "tabs tabs1"
+        else
+           document.GetElementById("panel" & Cstr(i)).style.display = "none"
+    'document.GetElementById("tab" & Cstr(i)).className = "tabs tabs0"
+        end if
+    i = i + 1
+    loop
+end sub
+'----------------------------------------------------------------------------------------------------------------------------------------------------------------------------'
+'----------------------------------------------------------------------------------------------------------------------------------------------------------------------------'
+
+Sub myFunction 
+  Dim oElm
+  Set oElm = document.getElementById("domains")
+  
+  if oElm Is Nothing then
+  	MsgBox("A domain was not selected")
+  else
+  	document.getElementbyID("domSel").innerHTML = "Selected Domain: " & oElm.value
+  end if 
+     
+End Sub
+'----------------------------------------------------------------------------------------------------------------------------------------------------------------------------'
+'----------------------------------------------------------------------------------------------------------------------------------------------------------------------------'
+'the following function returns the formatted domain to the calling fucntion'
+Function FuncDom 
+	Dim domain, dom, dom2
+
+	domain=document.getElementById("domains").value
+	if domain ="" then
+		MsgBox("A domain was not selected")
+	else if domain="root" Then
+		FuncDom=" -gcb -s subtree "     'these parameters seek for global catalog'
+		else
+			dom=split(domain,".") 'converts the dots '.' into dc= '
+			for each x in dom
+				dom2 = dom2 & ",dc=" & x  
+			next
+			FuncDom = "-b " & mid(dom2,2,len(dom2)-1) 'removes the first , of the first DC'
+		end if
+	end if
+
+end function
+'----------------------------------------------------------------------------------------------------------------------------------------------------------------------------'
+'----------------------------------------------------------------------------------------------------------------------------------------------------------------------------'
+function FieldsIn
+	dim x, i, strVal, strType, strName
+	set x = document.getElementById("fieldsform")
+	fieldsIn = ""
+	i = 0
+	do while i < x.length  
+		'strType = x.elements(i).type
+		strVal = x.elements(i).value
+		
+		'MsgBox(strval)
+		'strName = x.elements[i].name 
+
+		if x.elements(i).checked Then
+			fieldsIn = fieldsIn & strVal & " "
+			'msgbox(fieldsin)
+		end if
+		i=i+1 
+	loop
+
+end function
+
+'----------------------------------------------------------------------------------------------------------------------------------------------------------------------------'
+'----------------------------------------------------------------------------------------------------------------------------------------------------------------------------'
+'----------------------------------------------------------------------------------------------------------------------------------------------------------------------------'
+'----------------------------------------------------------------------------------------------------------------------------------------------------------------------------'
+'----------------------------------------------------------------------------------------------------------------------------------------------------------------------------'
+'----------------------------------------------------------------------------------------------------------------------------------------------------------------------------'
+Sub ListUser
+	'Dim wsh As Object
+    'Dim waitOnReturn As Boolean: waitOnReturn = True
+    'Dim windowStyle As Integer: windowStyle = 1
+    Dim objFSO, outFile, wshShell
+	Set objFSO = CreateObject("Scripting.FileSystemObject")
+	Set objShell = CreateObject("Wscript.Shell")
+	'Set wshShell = CreateObject("Wscript.Shell")
+
+	user=Textbox.value
+	if user="*" then
+		strOutputFile="AllUsers"
+	else
+		strOutputFile=user	
+	end if 
+
+	'MsgBox(fieldsIn)
+	fields=" sAMAccountName sAMAccountType sn givenname mail l description houseidentifier department W-DepartmentLevel1 W-DepartmentLevel2 W-DepartmentLevel3 W-DepartmentLevel4 W-DepartmentLevel5 W-EmployeeStatus company useraccountcontrol whencreated whenChanged lastLogon lastLogonTimestamp pwdLastSet accountExpires "
+	'params = "dsquery user -samid " & user & " | adfind -tdcas -samdc -csvdelim , -csvxl " & fields & " > " & user & ".csv"
+	'adfind -b dc=internal,dc=towerswatson,dc=com -f "&(objectCategory=person)(sAMAccountName=tina9101)"
+	
+	params = "adfind.exe " & FuncDom & " -f " & Chr(34) & "&(objectCategory=person)(sAMAccountName=" & user & ")" & Chr(34) & " -tdcas -samdc -csvdelim , -csvxl " & fieldsin & " > " & strOutputFile & ".csv"
+
+	strBatch = strOutputFile & "-com.bat"
+	Set outFile = objFSO.CreateTextFile(strBatch, True)
+	outFile.WriteLine params 'saving the command into a bat file'
+	'objShell.Run strBatch, 0, false
+    
+
+	If user = "" Then
+		MsgBox ("You must enter a value!")
+	Else
+		objShell.Run "cmd.exe /S /C " & params, 1, True
+		
+		MsgBox ("Search Completed, file " & strOutputFile & ".csv created (if empty process failed)")
+	End If
+	
+End Sub
+'----------------------------------------------------------------------------------------------------------------------------------------------------------------------------'
+'----------------------------------------------------------------------------------------------------------------------------------------------------------------------------'    
+Sub ListEmail
+	Dim objFSO, outFile
+	Set objFSO = CreateObject("Scripting.FileSystemObject")
+	Set objShell = CreateObject("Wscript.Shell")
+	
+	email=Textbox2.value
+	email2=Left(email,InStr(1,email,"@")-1)
+	
+	fields=" sAMAccountName sAMAccountType sn givenname mail l description houseidentifier department W-DepartmentLevel1 W-DepartmentLevel2 W-DepartmentLevel3 W-DepartmentLevel4 W-DepartmentLevel5 W-EmployeeStatus company useraccountcontrol whencreated whenChanged lastLogon lastLogonTimestamp pwdLastSet accountExpires "
+	params = "adfind.exe " & FuncDom & " -f " & Chr(34) & "&(objectCategory=person)(mail=" & email & ")" & Chr(34) & " -tdcas -samdc -csvdelim , -csvxl " & fieldsin & " > " & email2 & ".csv"
+	
+	If email2 = "" Then
+		MsgBox ("You must enter a value!")
+	Else
+		strBatch = email2 & "-com.bat"
+		Set outFile = objFSO.CreateTextFile(strBatch, True)
+		outFile.WriteLine params 'saving the command into a bat file'
+
+		objShell.Run "cmd.exe /S /C " & params, 1, True
+		MsgBox ("Search Completed, file " & email2 & ".csv created (if empty process failed)")
+	End If
+	
+End Sub
+'----------------------------------------------------------------------------------------------------------------------------------------------------------------------------'
+'----------------------------------------------------------------------------------------------------------------------------------------------------------------------------'
+Sub ListUserGroup
+	Dim objFSO, outFile, objShell
+	Set objFSO = CreateObject("Scripting.FileSystemObject")
+	Set objShell = CreateObject("Wscript.Shell")
+	
+	user=Textbox3.value
+	domain=document.getElementById("domains").value
+	if user="*" then 
+		MsgBox("You cannot use * to list on all users and its users - contact support for manual queries")
+	else 
+		params = "dsquery.exe user -d " & domain & " -samid " & user & " | dsget.exe user -memberof > " & user & "-groups.csv"
+		'msgbox params
+		If user = "" Then
+			MsgBox ("You must enter a value!")
+		Else
+			strBatch = user & "-groups-com.bat"
+			Set outFile = objFSO.CreateTextFile(strBatch, True)
+			outFile.WriteLine params 'saving the command into a bat file'
+
+			objShell.Run "cmd.exe /S /C " & params, 1, True
+			MsgBox ("Search Completed, file " & user & "-groups.csv created (if empty process failed)")
+		End If
+	end if 
+
+End Sub
+'----------------------------------------------------------------------------------------------------------------------------------------------------------------------------'
+'----------------------------------------------------------------------------------------------------------------------------------------------------------------------------'
+Sub FindUserID
+	Dim objFSO, outFile, objShell
+	Set objFSO = CreateObject("Scripting.FileSystemObject")
+	Set objShell = CreateObject("Wscript.Shell")
+
+	SN=Textbox4.value
+	fields=" sAMAccountName sAMAccountType sn givenname mail l description houseidentifier department W-DepartmentLevel1 W-DepartmentLevel2 W-DepartmentLevel3 W-DepartmentLevel4 W-DepartmentLevel5 W-EmployeeStatus company useraccountcontrol whencreated whenChanged lastLogon lastLogonTimestamp pwdLastSet accountExpires "
+	params = "adfind.exe " & FuncDom & " -f " & Chr(34) & "&(objectCategory=person)(sn=" & SN & ")" & Chr(34) & " -tdcas -samdc -csvdelim , -csvxl " & fieldsin & " > " & SN & ".csv"
+	If SN = "" Then
+		MsgBox ("You must enter a value!")
+	Else
+		strBatch = SN & "-SN-com.bat"
+		Set outFile = objFSO.CreateTextFile(strBatch, True)
+		outFile.WriteLine params 'saving the command into a bat file'
+
+		objShell.Run "cmd.exe /S /C " & params, 1, True
+		MsgBox ("Search Completed, file " & SN & ".csv created (if empty process failed)")
+	End If
+	
+End Sub
+'----------------------------------------------------------------------------------------------------------------------------------------------------------------------------'
+'----------------------------------------------------------------------------------------------------------------------------------------------------------------------------'
+Sub ListGroupMembers
+	Dim objFSO, outFile, objShell, strBatch
+	Set objFSO = CreateObject("Scripting.FileSystemObject")
+	Set objShell = CreateObject("Wscript.Shell")
+	
+	Group=Textbox5.value
+	if group<>"" then
+		If Left(group, 3) = "CN=" Or Mid(group, 2, 3) = "CN=" Then 'if the full DN is entered make it short name
+            groupshort = chr(34) & Mid(group, 4, InStr(1, group, ",") - 4) & chr(34)
+            groupname = Mid(group, 4, InStr(1, group, ",") - 4)
+    	Else
+            groupshort = chr(34) & group & chr(34)
+            groupname=group
+    	End If
+    End if
+	
+	fields=" sAMAccountName sAMAccountType sn givenname mail l description houseidentifier department W-DepartmentLevel1 W-DepartmentLevel2 W-DepartmentLevel3 W-DepartmentLevel4 W-DepartmentLevel5 W-EmployeeStatus company useraccountcontrol whencreated whenChanged lastLogon lastLogonTimestamp pwdLastSet accountExpires "
+	
+	params = "adfind.exe " & FuncDom & " -f name=" & groupshort & " member -list | adfind.exe -tdcas -samdc -csvdelim , -csvxl " & fieldsin & " > " & groupshort & ".csv"
+	
+	'msgbox(params)
+	
+	If groupname = "" Then
+		MsgBox ("You must enter a value!")
+	Else
+		strBatch = groupname & "-com.bat"
+		Set outFile = objFSO.CreateTextFile(strBatch, True)
+		outFile.WriteLine params 'saving the command into a bat file'
+
+		objShell.Run "cmd.exe /S /C " & params, 1, True
+		MsgBox ("Search Completed, file " & groupname & ".csv created (if the file is empty the probably the process failed)")
+	End If
+	
+End Sub
+'----------------------------------------------------------------------------------------------------------------------------------------------------------------------------'
+'----------------------------------------------------------------------------------------------------------------------------------------------------------------------------'
+Sub OnScreenQueries
+	Set objShell = CreateObject("Wscript.Shell")
+	objShell.Run "cmd.exe /S /C Rundll32 dsquery.dll OpenQueryWindow", 1, True
+end sub
+
+</script>
+
+<style>
+
+/* Add a black background color to the top navigation */
+.topnav {
+  background-color: #333;
+  overflow: hidden;
+}
+
+/* Style the links inside the navigation bar */
+.topnav a {
+  float: left;
+  color: Black;
+  text-align: center;
+  padding: 14px 16px;
+  text-decoration: none;
+  font-size: 17px;
+  background-color: lightgrey;
+}
+
+/* Change the color of links on hover */
+.topnav a:hover {
+  background-color: purple;
+  color: white;
+  
+}
+
+.panel {
+	Z-INDEX: 0; 
+	POSITION: relative; 
+	BORDER-BOTTOM: white 1px solid; 
+	BORDER-LEFT: white 1px solid; 
+	BORDER-TOP: white 1px solid; 
+	BORDER-RIGHT: white 1px solid; 
+	MARGIN-TOP: -1px; 
+	WIDTH: 100%; 
+	PADDING-TOP: 5px
+	PADDING-BOTTOM: 5px; 
+	PADDING-RIGHT: 5px; 
+	PADDING-LEFT: 5px; 
+	DISPLAY: none; 
+	HEIGHT: 410px; 
+	
+  	border-radius: 5px;
+  	background-color: #f2f2f2;
+  	padding: 20px;
+
+}
+
+#Panel1 input, select {
+	position: absolute;
+   	left: 18em;
+}
+
+</style>
+</head> 
+
+<BODY onload=onLoad()>
+
+<p style = "font-family:Tahoma;font-size:16px;">
+
+<div class="topnav">
+  <a class="active" href="#Panel1" onclick=selPanel(1) >Search</a>
+  <a href="#Panel2" onclick=selPanel(2) >Fields</a>
+  <a href="#Panel3" onclick=selPanel(3) >Help</a>
+  <a href="#Panel4" onclick=selPanel(4) >Contact</a>
+</div>
+<br>
+<br>
+<br>
+
+<DIV id=panel1 class=panel cellpadding="0">
+
+<form>
+Select a domain:
+  <select id="domains">
+    <option value="root">Root domain</option>
+    <option value="dir.willis.com">dir.willis.com</option>
+    <option value="int.dir.willis.com" selected>int.dir.willis.com</option>
+    <option value="ext.dir.willis.com">ext.dir.willis.com</option>
+    <option value="internal.towerswatson.com">internal.towerwatson.com</option>
+  </select>
+</form>        
+
+<button type="button" onclick="myFunction()"> Click to Select </button>
+
+<p id="domSel"> -Select Domain-</p>
+<p id="dom"></p>
+<p>
+<span id = "ControlsArea"></span>
+</p>
+
+<p>
+<span id = "DataArea"></span>
+</p>
+</DIV>
+
+<DIV id=panel2 class=panel cellpadding="0">
+<span id = "FieldsArea"></span>
+<form id=fieldsform> Select Fields:<br><br>
+<input type="checkbox" checked name="sAMAccountName" value="sAMAccountName">AccountName
+<br>
+<input type="checkbox" checked name="sAMAccountType" value="sAMAccountType">AccountType
+<br>
+<input type="checkbox" checked name="sn" value="sn">Family Name
+<br>
+<input type="checkbox" checked name="givenname" value="givenname">First Name
+<br>
+<input type="checkbox" checked name="mail" value="mail">email
+<br>
+<input type="checkbox" checked name="l" value="l">Location
+<br>
+<input type="checkbox" checked name="description" value="description">Description
+<br>
+<input type="checkbox" checked name="houseidentifier" value="houseidentifier">HouseIdentifier
+<br>
+<input type="checkbox" checked name="department" value="department">Department
+<br>
+<input type="checkbox" checked name="W-DepartmentLevel1" value="W-DepartmentLevel1">W-DepartmentLevel1 (from Oracle HR Cloud)
+<br>
+<input type="checkbox" checked name="W-DepartmentLevel2" value="W-DepartmentLevel2">W-DepartmentLevel2 (from Oracle HR Cloud)
+<br>
+<input type="checkbox" checked name="W-DepartmentLevel3" value="W-DepartmentLevel3">W-DepartmentLevel3 (from Oracle HR Cloud)
+<br>
+<input type="checkbox" checked name="W-DepartmentLevel4" Value="W-DepartmentLevel4">W-DepartmentLevel4 (from Oracle HR Cloud)
+<br>
+<input type="checkbox" checked name="W-DepartmentLevel5" value="W-DepartmentLevel5">W-DepartmentLevel5 (from Oracle HR Cloud)
+<br>
+<input type="checkbox" checked name="company" value="company">Company
+<br>
+<input type="checkbox" checked name="W-EmployeeStatus" value="W-EmployeeStatus">Employee Status (From Oracle HR Cloud)
+<br>
+<input type="checkbox" checked name="useraccountcontrol" value="useraccountcontrol">UserAccountControl (active/locked/disabled/etc.)
+<br>
+<input type="checkbox" checked name="whencreated" value="whencreated">WhenCreated
+<br>
+<input type="checkbox" checked name="whenChanged" value="whenChanged">WhenChanged
+<br>
+<input type="checkbox" checked name="lastLogon" value="lastLogon">Last Logon
+<br>
+<input type="checkbox" checked name="lastLogonTimestamp" value="lastLogonTimestamp">last Logon Timestamp
+<br>
+<input type="checkbox" checked name="pwdLastSet" value="pwdLastSet">Last Password Set on
+<br>
+<input type="checkbox" checked name="accountExpires" value="accountExpires">Account Expires on
+</form>
+</DIV>
+
+<DIV id=panel3 class=panel cellpadding="0">
+<span id = "HelpArea"></span>
+This is in development<br>
+<br>
+<u>What's New:</u><br>
+v2.0 launched on 12/2018 a HTML version due to incompatibility issues on Excel version<br>
+v2.1 launched on 13/2/2019 refreshed version with consolidated search on multiple domains and select fields for output. Added menu to navigate options.<br>
+v2.2 launched on 14/2/2019 refreshed displayed GUI. Minor bugs corrected. <br>
+v2.3 launched on 21/6/2019 added the output file of the command to execute from command line <br>
+v2.3.1 launched on 17/7/2019 added option to export all users or Search by User ID. <br>
+<br><br>
+<u>Next versions and known issues</u><br>
+<ul>
+	<li> Option to upload a file to run multiple queries; </li>
+	<li> Validation of entered fields is incomplete, i.e. no validation that the email is correctly formatted (only checking for empty values);</li>
+	<li> Show results in the screen; </li>
+	<li> Show message if empty results and do not create a file; </li>
+	<li> Add custom additional fields; </li>
+	<li> Add option to query by the 5 department levels from Oracle HR Cloud; </li>
+	<li> Add expert queries for IT Auditors; </li>
+	<li> Add recursive query across all domains. </li>
+
+</DIV>
+
+<DIV id=panel4 class=panel cellpadding="0">
+<span id = "ContactArea"></span>
+For questions, feedback and tailored queries contact: <br>
+Luis Bernardi<br>
++33 6 30 94 10 97<br>
++44 7 841 362 864<br>
+<a href="SIP:luis.bernardi@grassavoye.com">Chat via Skype</a><br>
+<a href = "mailto:luis.bernardi@grassavoye.com?subject='Feedback on ADFind tool' "> luis.bernardi@grassavoye.com </a>
+</DIV>	
+
+
+</body>
+</html>
