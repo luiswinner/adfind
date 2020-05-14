@@ -1,0 +1,1311 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>ADFind GUI 2.6</title>
+<!--meta http-equiv="x-ua-compatible" content="ie=9"-->
+<HTA:APPLICATION
+  APPLICATIONNAME="ADFind Application"
+  SCROLL="yes"
+  SINGLEINSTANCE="no"
+  WINDOWSTATE="normal">
+</HTA:APPLICATION>  
+<script language="VBScript"> 
+
+'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+''''''''''''''''''''''  Subs / Classes / Functions  '''''''''''''''''''''''''''
+'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+'***************************************************************************************************************************************************************'
+
+Sub onLoad()
+  'when open the html body this shows the home screen = panel1'
+  document.GetElementById("panel1").style.display = "block"
+
+end sub
+
+
+function ListDoms 
+
+Dim WshShell, oExec, objFSO, objInputFile
+
+  Set objFSO = CreateObject("Scripting.FileSystemObject")
+  Set objInputFile = objFSO.OpenTextFile("domains.txt",1)
+
+  'Creating dynamically the dropdown box with the domains'
+
+  ctrlsHTML = "<form> Select Domain:" 
+  ctrlsHTML = ctrlsHTML & "<select id=" & Chr(34) & "domains" & Chr(34) & ">"
+  ctrlsHTML = ctrlsHTML & "<option value=" & Chr(34) & "int.dir.willis.com" & Chr(34) & " >int.dir.willis.com</option>"
+
+  Do until objInputFile.AtEndofStream
+    strLine = objInputFile.ReadLine
+    ctrlsHTML = ctrlsHTML & "<option value=" & Chr(34) & strLine & Chr(34) & ">" & strLine & "</option>"
+  Loop
+
+  ctrlsHTML = ctrlsHTML & "</select>"
+  ctrlsHTML = ctrlsHTML & "</form>"
+
+  ListDoms = ctrlsHTML
+
+  'EnableDisableSwitch = 0
+
+  objInputFile.Close
+  
+
+end function
+
+Sub window_Onload
+
+  Dim WshShell, oExec, objFSO, objInputFile
+
+  'Debug "<h3>This is the debug display. Don not close this window until script is completed.</h3>"
+
+  Set objFSO = CreateObject("Scripting.FileSystemObject")
+  Set objInputFile = objFSO.OpenTextFile("domains.txt",1)
+
+  'Creating dynamically the dropdown box with the domains'
+
+  ctrlsHTML = "<form> Select Domain:" 
+  ctrlsHTML = ctrlsHTML & "<select id=" & Chr(34) & "domains" & Chr(34) & ">"
+  ctrlsHTML = ctrlsHTML & "<option value=" & Chr(34) & "int.dir.willis.com" & Chr(34) & " >int.dir.willis.com</option>"
+
+  Do until objInputFile.AtEndofStream
+    strLine = objInputFile.ReadLine
+    ctrlsHTML = ctrlsHTML & "<option value=" & Chr(34) & strLine & Chr(34) & ">" & strLine & "</option>"
+  Loop
+
+  ctrlsHTML = ctrlsHTML & "</select>"
+  ctrlsHTML = ctrlsHTML & "</form>"
+
+  document.getElementById("ControlsArea").innerHTML = ctrlsHTML
+
+  EnableDisableSwitch = 0
+
+  objInputFile.Close
+  
+  window.resizeto 700,450
+  
+
+End Sub
+'----------------------------------------------------------------------------------------------------------------------------------------------------------------------------'
+'----------------------------------------------------------------------------------------------------------------------------------------------------------------------------'
+
+Sub selPanel(number)
+  i = 1
+  do while i <= 11
+    if i = number then
+      document.GetElementById("panel" & Cstr(i)).style.display = "block"
+    else 
+      document.GetElementById("panel" & Cstr(i)).style.display = "none"
+    end if
+    if number > 4 and number < 11 then
+      document.getElementById("panel0").style.display = "inline-block"
+    else
+      document.getElementById("panel0").style.display = "none"
+    end if
+    i = i + 1
+  Loop
+
+
+end sub
+
+'----------------------------------------------------------------------------------------------------------------------------------------------------------------------------'
+'----------------------------------------------------------------------------------------------------------------------------------------------------------------------------'
+
+
+Sub ClearWindow 'not used'
+
+  DataArea.InnerHTML = ""
+
+End Sub
+'----------------------------------------------------------------------------------------------------------------------------------------------------------------------------'
+'----------------------------------------------------------------------------------------------------------------------------------------------------------------------------'
+
+Sub Debug(myText)
+  ' Uncomment the next line to turn off debugging
+  ' Exit Sub
+  'Dim objIEDebugWindow
+
+  'If Not IsObject( objIEDebugWindow ) Then
+  ''  Set objIEDebugWindow = CreateObject( "InternetExplorer.Application" )
+  ''  objIEDebugWindow.Navigate "about:blank"
+  ''  objIEDebugWindow.Visible = True
+  ''  objIEDebugWindow.ToolBar = False
+  ''  objIEDebugWindow.Width   = 600
+  ''  objIEDebugWindow.Height  = 400
+  ''  objIEDebugWindow.Left    = 10
+  ''  objIEDebugWindow.Top     = 10
+  ''  Do While objIEDebugWindow.Busy
+  ''    WScript.Sleep 100
+  ''  Loop
+   '' objIEDebugWindow.Document.Title = "ADFind Debug Window"
+  ''  objIEDebugWindow.Document.Body.InnerHTML = "<b>" & Now & "</b></br>"
+  'End If
+
+  'objIEDebugWindow.Document.Body.InnerHTML = objIEDebugWindow.Document.Body.InnerHTML & myText & "<br>" & vbCrLf
+  log(myText)
+  
+End Sub
+
+'----------------------------------------------------------------------------------------------------------------------------------------------------------------------------'
+'----------------------------------------------------------------------------------------------------------------------------------------------------------------------------'
+Function FileExists(FilePath)
+  Set fso = CreateObject("Scripting.FileSystemObject")
+  If fso.FileExists(FilePath) Then
+    FileExists=CBool(1) 'true
+  Else
+    FileExists=CBool(0) 'false
+  End If
+End Function
+'use:
+'If FileExists("c:\testfolder\testfile.txt") Then
+'  WScript.Echo "Does Exist"
+'Else
+'  WScript.Echo "Does not exist"
+'End If
+'----------------------------------------------------------------------------------------------------------------------------------------------------------------------------'
+'----------------------------------------------------------------------------------------------------------------------------------------------------------------------------'
+'----------------------------------------------------------------------------------------------------------------------------------------------------------------------------'
+sub log(logText)
+  Dim objFSO, outFile
+  Set objFSO = CreateObject("Scripting.FileSystemObject")
+  Set objShell = CreateObject("Wscript.Shell")
+
+  strDTU = "echo %date% %time% %username% | clip"
+  
+  objShell.Run "cmd.exe /S /C " & strDTU , 0, True 'waitOnReturn = True and windowStyle = 0 meaning do not show up black screen'
+  
+  ' Use the HTML parser to have access to the clipboard and get text content'
+  Dim strLogdata : strLogdata = CreateObject("htmlfile").ParentWindow.ClipboardData.GetData("text")
+
+  strLog = "ADFind.log" 
+  
+  if FileExists(strLog) then
+    Set outFile = objFSO.OpenTextFile(strLog, 8, True ) ' 8 = for appending'
+  else
+    Set outFile = objFSO.CreateTextFile(strLog, True) ' creating file'
+  end if
+  params= strLogdata & logText
+  outFile.WriteLine params 'saving log string to the log file'
+
+end sub
+'----------------------------------------------------------------------------------------------------------------------------------------------------------------------------'
+
+'----------------------------------------------------------------------------------------------------------------------------------------------------------------------------'
+'----------------------------------------------------------------------------------------------------------------------------------------------------------------------------'
+
+sub PopulateDomains(strDom) 'not used - don't remove to be used for future functions to repopulate the Domains.txt file dynamically
+'adfind -f objectclass=trusteddomain cn flatname -nodn -jcsv2'
+
+  Dim objShell
+  Set objShell = CreateObject("Wscript.Shell")
+
+  params = "adfind.exe -b " & strDom & "-f "& Chr(34) & "(objectClass=trustedDomain)" & Chr(34) & " -nodn -jcsv2 cn > domains.txt" 
+
+  objShell.Run "cmd.exe /S /C " & params, 0, True
+
+end sub
+
+'----------------------------------------------------------------------------------------------------------------------------------------------------------------------------'
+'----------------------------------------------------------------------------------------------------------------------------------------------------------------------------'
+
+Sub myFunction 'no longer used since version 2.5.1 the element dom is now used for messages on each search function.' 
+  Dim oElm
+  Set oElm = document.getElementById("domains")
+  
+  if oElm Is Nothing then
+  MsgBox("A domain was not selected")
+  else
+    document.getElementById("dom").innerHTML = "Selected Domain: " & oElm.value 'the element -dom- should be declared in the body of the HTML in order to be displayed correctly when text is updated'
+  end if 
+     
+End Sub
+'----------------------------------------------------------------------------------------------------------------------------------------------------------------------------'
+'----------------------------------------------------------------------------------------------------------------------------------------------------------------------------'
+'the following function returns the formatted domain to the calling fucntion'
+Function FuncDom 
+  Dim domain, dom, dom2
+
+  domain=document.getElementById("domains").value
+
+  if domain ="" then
+    MsgBox("A domain was not selected")
+  else if domain="root" Then
+    FuncDom=" -gcb -s subtree "     'these parameters seek for global catalog'
+    else
+      dom=split(domain,".") 'converts the dots '.' into dc= '
+      for each x in dom
+        dom2 = dom2 & ",dc=" & x  
+      next
+      FuncDom = "-b " & mid(dom2,2,len(dom2)-1) 'removes the first , of the first DC'
+    end if
+  end if
+
+end function
+'----------------------------------------------------------------------------------------------------------------------------------------------------------------------------'
+'----------------------------------------------------------------------------------------------------------------------------------------------------------------------------'
+function FieldsIn
+  dim x, i, strVal, strType, strName
+  set x = document.getElementById("fieldsform")
+  fieldsIn = ""
+  i = 0
+  do while i < x.length  
+    'strType = x.elements(i).type
+    strVal = x.elements(i).value
+    
+    'MsgBox(strval)'
+    'strName = x.elements[i].name '
+
+    if x.elements(i).checked Then
+      fieldsIn = fieldsIn & strVal & " "
+      'msgbox(fieldsin)'
+    end if
+    i=i+1 
+  loop
+
+end function
+
+'----------------------------------------------------------------------------------------------------------------------------------------------------------------------------'
+
+Function SelectFile( )
+    ' File Browser via HTA
+    ' Author:   Rudi Degrande, modifications by Denis St-Pierre and Rob van der Woude
+    ' Features: Works in Windows Vista and up (Should also work in XP).
+    '           Fairly fast.
+    '           All native code/controls (No 3rd party DLL/ XP DLL).
+    ' Caveats:  Cannot define default starting folder.
+    '           Uses last folder used with MSHTA.EXE stored in Binary in [HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\ComDlg32].
+    '           Dialog title says "Choose file to upload".
+    ' Source:   https://social.technet.microsoft.com/Forums/scriptcenter/en-US/a3b358e8-15ae-4ba3-bca5-ec349df65ef6/windows7-vbscript-open-file-dialog-box-fakepath?forum=ITCG
+
+    Dim objExec, strMSHTA, wshShell
+
+    SelectFile = ""
+
+    ' For use in HTAs as well as "plain" VBScript:
+    strMSHTA = "mshta.exe ""about:" & "<" & "input type=file id=FILE>" _
+             & "<" & "script>FILE.click();new ActiveXObject('Scripting.FileSystemObject')" _
+             & ".GetStandardStream(1).WriteLine(FILE.value);close();resizeTo(0,0);" & "<" & "/script>"""
+
+    Set wshShell = CreateObject( "WScript.Shell" )
+    Set objExec = wshShell.Exec( strMSHTA )
+
+    SelectFile = objExec.StdOut.ReadLine( )   'StdOut=standard output
+  debug "file selected " 
+  
+    Set objExec = Nothing
+    Set wshShell = Nothing
+
+End Function
+'----------------------------------------------------------------------------------------------------------------------------------------------------------------------------'
+
+Function validEmail(strMail)  ' TO DO: Enhance controls as next function IsValidEmail
+   
+   If instr(strMail, "@") = 0 OR instr(strMail, ".") = 0 OR Len(strMail) < 7 or left(strMail,1) = "@" Then
+    validEmail = False
+  else
+    validEmail = True
+  End if
+  debug "Email: " & strMail & " Valid Email = " & ValidEmail
+  
+End Function
+'----------------------------------------------------------------------------------------------------------------------------------------------------------------------------'
+Function IsValidEmail(strEAddress) '-------------- NOT USED = dont remove, should be merged with function validEmail
+  Dim objRegExpr
+  Set objRegExpr = New RegExp
+  objRegExpr.Pattern = "^[a-zA-Z0-9][\w\.-]*[a-zA-Z0-9]@[\w-\.]*[a-zA-Z0-9]\.[a-zA-Z]{2,7}$"
+  objRegExpr.Global = True
+  objRegExpr.IgnoreCase = False
+  IsValidEmail = objRegExpr.Test(strEAddress)
+  Set objRegExpr = Nothing
+End Function
+
+'----------------------------------------------------------------------------------------------------------------------------------------------------------------------------'
+'----------------------------------------------------------------------------------------------------------------------------------------------------------------------------'
+'----------------------------------------------------------------------------------------------------------------------------------------------------------------------------'
+'----------------------------------------------------------------------------------------------------------------------------------------------------------------------------'
+'----------------------------------------------------------------------------------------------------------------------------------------------------------------------------'
+'--------------------------------------------main routines-------------------------------------------------------------------------------------------------------------------'
+'----------------------------------------------------------------------------------------------------------------------------------------------------------------------------'
+'----------------------------------------------------------------------------------------------------------------------------------------------------------------------------'
+'----------------------------------------------------------------------------------------------------------------------------------------------------------------------------'
+'----------------------------------------------------------------------------------------------------------------------------------------------------------------------------'
+'----------------------------------------------------------------------------------------------------------------------------------------------------------------------------'
+'----------------------------------------------------------------------------------------------------------------------------------------------------------------------------'
+
+Sub ListUser
+  '--------------------------------------------------------------------------------'
+  '- Function:  Obtain a file with userIDs and its details'
+  '- Input:     a text file with a list of userIDs, one per line'
+  '- Output:    a filename users.csv'
+  '--------------------------------------------------------------------------------'
+  
+  'Dim waitOnReturn As Boolean: waitOnReturn = True'
+    'Dim windowStyle As Integer: windowStyle = 1'
+  Dim objFSO, outFile, objShell, dom
+  
+  Set objFSO = CreateObject("Scripting.FileSystemObject")
+  Set objShell = CreateObject("WScript.Shell")
+    
+  debug "Start of ListUser <br> --------------------"
+  
+  if trim(Textbox.value) = "" then
+    MsgBox("No user entered")
+    debug "No user entered"
+  elseif len(trim(Textbox.value)) > 20 then 
+    MsgBox("UserID size cannot be more than 20 characters")
+    debug "UserID size cannot be more than 20 characters"
+  else
+    user=Textbox.value
+  
+    if user="*" then ' * means all users on AD queries'
+      dom=document.getElementById("domains").value
+      domain=left(dom,InStr(dom,".")-1)
+      strOutputFile = "AllUsers-" & domain
+    else
+      strOutputFile = domain & "-" & user  
+    end if 
+
+    'MsgBox(fieldsIn)'
+    'fields=" sAMAccountName sAMAccountType sn givenname mail l description houseidentifier department W-DepartmentLevel1 W-DepartmentLevel2 W-DepartmentLevel3 W-DepartmentLevel4 W-DepartmentLevel5 W-EmployeeStatus company useraccountcontrol whencreated whenChanged lastLogon lastLogonTimestamp pwdLastSet accountExpires "
+    'params = "dsquery user -samid " & user & " | adfind -tdcas -samdc -csvdelim , -csvxl " & fields & " > " & user & ".csv"'
+    'adfind -b dc=internal,dc=towerswatson,dc=com -f "&(objectCategory=person)(sAMAccountName=tina9101)"'
+    
+    params = "adfind.exe " & FuncDom & " -f " & Chr(34) & "&(objectCategory=person)(sAMAccountName=" & user & ")" & Chr(34) & " -tdcas -samdc -csvdelim , -csvxl " & fieldsin & " > " & strOutputFile & ".csv"
+    checks = "adfind.exe " & FuncDom & " -f " & Chr(34) & "&(objectCategory=person)(sAMAccountName=" & user & ")" & Chr(34) & " -csv -nocsvheader -c | clip"
+    
+    objShell.Run "cmd.exe /S /C " & checks , 0, True 'waitOnReturn = True and windowStyle = 1'
+     
+    ' Use the HTML parser to have access to the clipboard and get text content'
+    Dim strtext : strtext = CreateObject("htmlfile").ParentWindow.ClipboardData.GetData("text")
+    
+    debug params
+    debug strtext
+    
+    if instr(strtext,"0 Objects returned") > 0 then   ' the query resulted in no output
+      msgbox("No file created as output is empty")
+
+    else                      ' the query resulted in at least one record output
+      strBatch = strOutputFile & "-com.bat"
+      Set outFile = objFSO.CreateTextFile(strBatch, True) 
+      outFile.WriteLine params 'saving the command into a bat file'
+      'objShell.Run strBatch, 0, false'
+    
+      'command created ready for execution'
+      objShell.Run "cmd.exe /S /C " & params, 0, True 'waitOnReturn = True and windowStyle = 1'
+    
+      MsgBox ("Search Completed, file " & strOutputFile & ".csv created.")
+      debug   "Search Completed, file " & strOutputFile & ".csv created." 
+    end if
+  end if
+  debug "End of ListUser <br> -------------------- <br>"
+End Sub
+
+'----------------------------------------------------------------------------------------------------------------------------------------------------------------------------'
+'----------------------------------------------------------------------------------------------------------------------------------------------------------------------------'
+Sub SelectFileUser
+  '--------------------------------------------------------------------------------'
+  '- Function:  Obtain a file with userIDs and its details'
+  '- Input:     a text file with a list of userIDs, one per line'
+  '- Output:    a filename users.csv'
+  '--------------------------------------------------------------------------------'
+  debug "Start of SelectFileUser <br> --------------------"
+  Dim strFile
+  strFile = SelectFile( )
+
+  If strFile = "" Then 
+      MsgBox("No file selected.")
+  Else
+      MsgBox ("File Selected: " & strFile)
+      document.getElementById("dom").innerHTML = "Selected file for User Query: " & strFile & "<br> and output file will be users.csv"
+      Set objInputFile = objFSO.OpenTextFile(strFile)
+    Set objShell = CreateObject("Wscript.Shell")
+    i=0
+    Do until objInputFile.AtEndofStream
+      
+      strLine = trim(objInputFile.ReadLine)
+      if len(strLine) > 20 then 'TO DO: here should be checked for non-approved characters " [ ] : ; | = + * ? < > / \ , and possibly @ --- see https://social.technet.microsoft.com/wiki/contents/articles/11216.active-directory-requirements-for-creating-objects.aspx
+        debug "skipping user " & strLine & " as lenght is more than 20 characters"
+      elseif strline="" then
+        debug "skipping lines as it is empty " 
+      else
+        i+i=1
+        if i > 1 then
+          strAddParam = " -nocsvheader " & fieldsin & " >"    'meaning the extra users will be added to the same existing file users.csv without header'
+        else 
+          strAddParam = fieldsin & " "              'meaning that the file will be created or overwritten and header will be added'
+        end if 
+
+        params = "adfind.exe " & FuncDom & " -f " & Chr(34) & "&(objectCategory=person)(sAMAccountName=" & strLine & ")" & Chr(34) & " -tdcas -samdc -csvdelim , -csvxl " & strAddParam & "> users.csv"
+        debug params
+
+        objShell.Run "cmd.exe /S /C " & params, 0, True 'waitOnReturn = True and windowStyle = 0 not showing black window'
+      end if 'if lenght is 20 chrs'
+    Loop
+
+    objInputFile.Close
+  
+  msgbox "Query completed, " & i & " users processed. File Users.CSV created."
+  debug  "Query completed, " & i & " users processed. File Users.CSV created."
+  End If
+  debug "End of SelectUser <br> -------------------- <br> "
+end sub
+
+'----------------------------------------------------------------------------------------------------------------------------------------------------------------------------'
+'----------------------------------------------------------------------------------------------------------------------------------------------------------------------------'    
+Sub ListEmail
+  '--------------------------------------------------------------------------------'
+  '- Function:  Obtain a file with userIDs associated to a given email'
+  '- Input:     email address'
+  '- Output:    a filename name.surname.csv'
+  '--------------------------------------------------------------------------------'
+
+  Dim objFSO, outFile
+  Set objFSO = CreateObject("Scripting.FileSystemObject")
+  Set objShell = CreateObject("Wscript.Shell")
+  
+  debug "Start of ListEmail <br> --------------------"
+  
+  email=Textbox2.value
+  
+  if validEmail (email) = True then
+    email2=Left(email,InStr(1,email,"@")-1)   ' TO DO: Need to check for full format validation = validEmail
+    params = "adfind.exe " & FuncDom & " -f " & Chr(34) & "&(objectCategory=person)(mail=" & email & ")" & Chr(34) & " -tdcas -samdc -csvdelim , -csvxl " & fieldsin & " > " & email2 & ".csv"
+    checks = "adfind.exe " & FuncDom & " -f " & Chr(34) & "&(objectCategory=person)(mail=" & email & ")" & Chr(34) & " -csv -nocsvheader -c | clip"
+    
+    debug params
+    
+    objShell.Run "cmd.exe /S /C " & checks , 0, True 'waitOnReturn = True and windowStyle = 1'
+    
+      ' Use the HTML parser to have access to the clipboard and get text content
+    Dim strtext : strtext = CreateObject("htmlfile").ParentWindow.ClipboardData.GetData("text")
+    
+    if instr(strtext,"0 Objects returned") > 0 then   ' the query resulted in no output
+      msgbox("No file created as output is empty")
+
+    else                      ' the query resulted in at least one record output
+    
+      strBatch = email2 & "-com.bat"
+      Set outFile = objFSO.CreateTextFile(strBatch, True)
+      outFile.WriteLine params 'saving the command into a bat file'
+
+      objShell.Run "cmd.exe /S /C " & params, 0, True
+      MsgBox ("Search Completed, file " & email2 & ".csv created.")
+    end if
+  Else  
+    MsgBox ("You must enter a valid email.")
+  
+  End If
+  debug "End of ListEmail <br> -------------------- <br>"
+End Sub
+'----------------------------------------------------------------------------------------------------------------------------------------------------------------------------'
+Sub SelectFileEmail
+  '--------------------------------------------------------------------------------
+  '- Function: Obtain [a] file/s with userIDs associated to [a] given email/s 
+  '- Input: text file with a list of emails, one user per line
+  '- Output: a filename name.surname.csv or EmailsOutputFile.csv
+  '--------------------------------------------------------------------------------
+  
+  Dim strFile
+  debug "Start of SelectFileEmail <br> --------------------"
+  strFile = SelectFile( )
+
+  If strFile = "" Then 
+      MsgBox("No file selected.")
+  Else
+      Result=MsgBox ("File Selected: " & strFile & vbcrlf & "Do you want to save the output into a single consolidated file?" & vbCrLf & "If so click on 'Yes', otherwise Press 'No'.", vbYesNo + vbQuestion)
+    document.getElementById("dom").innerHTML = "Selected file for User Email Query: " & strFile 
+      Set objInputFile = objFSO.OpenTextFile(strFile)
+    Set objShell = CreateObject("Wscript.Shell")
+    i=0
+    ii=0
+    Do until objInputFile.AtEndofStream
+      
+      strLine = objInputFile.ReadLine
+      i=i+1
+      if validEmail(strLine) then
+        emailLeft = Left(strLine,InStr(1,strLine,"@")-1)
+      
+        strAddParam = fieldsin              
+        if result=vbYes then
+          emailFile="EmailsOutputFile.csv"
+          
+          ii=ii+1
+          if ii > 1 then
+            strAddParam = " -nocsvheader " & fieldsin  'meaning the extra users will be added to the same existing file users.csv without header'
+            saveFile=" >> "
+          else
+            strAddParam = fieldsin             
+            saveFile=" > "                'meaning that the file will be created or overwritten and Header will be added'
+          end if 
+          
+        else
+          ii=ii+1
+          emailFile = emailLeft & ".csv"
+          saveFile=" > "
+        End if
+        
+        params = "adfind.exe " & FuncDom & " -f " & Chr(34) & "&(objectCategory=person)(mail=" & strLine & ")" & Chr(34) & " -tdcas -samdc -csvdelim , -csvxl " & strAddParam & saveFile & emailFile 
+        Debug params
+
+        objShell.Run "cmd.exe /S /C " & params, 0, True 'waitOnReturn = True and windowStyle = 1'
+      else
+        Debug "Not valid email " & strLine & " found, skipping line."
+      end if
+      
+    Loop
+
+    objInputFile.Close
+    msgbox(i & " lines were read. " & ii & " valid emails processed.")
+    result=""
+    document.getElementById("dom").innerHTML =""
+  End If
+  debug "End of SelectFileEmail <br> -------------------- <br>" 
+end sub
+
+'----------------------------------------------------------------------------------------------------------------------------------------------------------------------------'
+'----------------------------------------------------------------------------------------------------------------------------------------------------------------------------'    
+Sub FindSharedEmail
+  '--------------------------------------------------------------------------------
+  '- Function:  Obtain a file with userIDs associated to a given shared email account
+  '- Input:     shared email address
+  '- Output:    a filename email.csv
+  '--------------------------------------------------------------------------------
+
+  Dim objFSO, outFile
+  Set objFSO = CreateObject("Scripting.FileSystemObject")
+  Set objShell = CreateObject("Wscript.Shell")
+  
+  debug "Start of ListEmail <br> --------------------"
+  
+  email=Textbox6.value
+  
+  if validEmail (email) = True then
+    email2=Left(email,InStr(1,email,"@")-1)   ' TO DO: Need to check for full format validation = validEmail
+    params = "adfind.exe " & FuncDom & " -f " & Chr(34) & "&(objectCategory=person)(mail=" & email & ")" & Chr(34) & " publicdelegates publicdelegatesBL msexchdelegatelistlink -list -nodn | adfind -tdcas -samdc -csvdelim , -csvxl " & fieldsin & " > " & email2 & ".csv"
+    checks = "adfind.exe " & FuncDom & " -f " & Chr(34) & "&(objectCategory=person)(mail=" & email & ")" & Chr(34) & " -csv -nocsvheader -c | clip"
+    
+    debug params
+    
+    objShell.Run "cmd.exe /S /C " & checks , 0, True 'waitOnReturn = True and windowStyle = 1'
+    
+      ' Use the HTML parser to have access to the clipboard and get text content
+    Dim strtext : strtext = CreateObject("htmlfile").ParentWindow.ClipboardData.GetData("text")
+    debug strtext
+    
+    if instr(strtext,"1 Objects returned") > 0  then    ' the query resulted in at least one record output
+      strBatch = email2 & "-com.bat"
+      Set outFile = objFSO.CreateTextFile(strBatch, True)
+      outFile.WriteLine params 'saving the command into a bat file'
+
+      objShell.Run "cmd.exe /S /C " & params, 0, True
+      MsgBox ("Search Completed, file " & email2 & ".csv created.")
+      
+    Else  'The query resulted in no output
+      msgbox("No file created as email " & email & " was not found.")
+    end if
+  Else  
+    MsgBox ("You must enter a valid email.")
+  
+  End If
+  debug "End of ListEmail <br> -------------------- <br>"
+End Sub
+
+'----------------------------------------------------------------------------------------------------------------------------------------------------------------------------'
+Sub ListUserGroup       
+  '------------------------------------------------------------
+  '- Function: Obtain the list of a user's group memberships 
+  '- Input: is the SAMAccountName also known as UserID
+  '- Output: a filename userID-groups.csv
+  '------------------------------------------------------------
+  
+  Dim objFSO, outFile, objShell
+  Set objFSO = CreateObject("Scripting.FileSystemObject")
+  Set objShell = CreateObject("Wscript.Shell")
+  debug "Start of ListUserGroup <br> --------------------"
+  
+  user=Textbox3.value
+  domain=document.getElementById("domains").value
+  
+    
+  if user="*" then 
+    MsgBox("You cannot use * to list on all users and its groups - contact support for manual queries")
+  elseif len(user) > 20 then  'here should be checked for non-approved characters " [ ] : ; | = + * ? < > / \ , and possibly @ --- see https://social.technet.microsoft.com/wiki/contents/articles/11216.active-directory-requirements-for-creating-objects.aspx
+    debug "skipping user as value is more than 20 characters"
+    msgbox "user name cannot be more than 20 characters"
+  elseIf user = "" Then
+    MsgBox ("You must enter a value!")
+  Else
+    'params = "dsquery.exe user -d " & domain & " -samid " & user & " | dsget.exe user -memberof -expand > " & user & "-groups.csv"
+    params = "adfind.exe " & FuncDom & " -f " & Chr(34) & "&(objectCategory=person)(SamAccountName=" & user & ")" & Chr(34) & " memberof -list > " & user & "-groups.csv"
+    debug params
+    checks = "adfind.exe " & FuncDom & " -f " & Chr(34) & "&(objectCategory=person)(SamAccountName=" & user & ")" & Chr(34) & " -csv -nocsvheader -c | clip"
+    
+    objShell.Run "cmd.exe /S /C " & checks, 0, True
+    ' Use the HTML parser to have access to the clipboard and get text content
+    Dim strText : strText = CreateObject("htmlfile").ParentWindow.ClipboardData.GetData("text")
+    'debug strText  
+  
+    if instr(strText,"0 Objects returned") > 0 then   ' the query resulted in no output
+      msgbox("No file was created as the user name entered was not found in the domain selected.")
+      debug "User name does not exist on the domain"
+      
+    else
+      strBatch = user & "-groups-com.bat"
+      Set outFile = objFSO.CreateTextFile(strBatch, True)
+      outFile.WriteLine params 'saving the command into a bat file'
+
+      objShell.Run "cmd.exe /S /C " & params, 0, True
+      MsgBox ("Search Completed, file " & user & "-groups.csv created.")
+    End If
+  end if 
+  debug "End of ListUserGroup <br> -------------------- <br>"
+End Sub
+
+'----------------------------------------------------------------------------------------------------------------------------------------------------------------------------'
+Sub SelectFileUsrGrp   
+  '-----------------------------------------------------------------------------------------------
+  '- Function: Obtain the list of a user's group memberships 
+  '- Input: a text file with a list of SAMAccountName also known as UserID, one userID per line
+  '- Output: a filename userID-groups.csv or consolidated file OutFileUserGrps.csv
+  '-----------------------------------------------------------------------------------------------
+
+  'scriptdir = CreateObject("Scripting.FileSystemObject").GetParentFolderName(WScript.ScriptFullName)' --- to check the current folder
+  
+  Dim strFile
+  debug "Start of SelectFileUsrGrp <br> --------------------" 
+  
+  Set objFSO = CreateObject("Scripting.FileSystemObject")
+  strFile = SelectFile( )
+  strOutFile="OutFileUserGrps.csv"
+
+  domain=document.getElementById("domains").value
+
+  If strFile = "" Then 
+      MsgBox("No file selected.")
+  Else
+      Result=MsgBox ("File Selected: " & strFile & vbCrLf & "Do you want to save the output into a single consolidated file?" & vbCrLf & "If so click on 'Yes', otherwise Press 'No'.", vbYesNoCancel + vbQuestion)
+      document.getElementById("dom").innerHTML = "Selected file for User Query: " & strFile 
+      
+    Set objInputFile = objFSO.OpenTextFile(strFile)
+    Set objShell = CreateObject("Wscript.Shell")
+    i=0
+    
+    if result <> vbCancel then
+      Do until objInputFile.AtEndofStream
+      
+        strLine = objInputFile.ReadLine
+        debug strLine
+        
+        if result=vbYes then
+          strOutput=" > tempFile.csv"
+        else
+          strOutput= " > " & strLine & "-groups.csv"  'need to add an space to separate the > symbol
+        end if
+        
+        'params = "dsquery.exe user -d " & domain & " -samid " & strLine & " | dsget.exe user -memberof -expand " & strOutput 
+        params = "adfind.exe " & FuncDom & " -f " & Chr(34) & "&(objectCategory=person)(SamAccountName=" & strLine & ")" & Chr(34) & " memberof -list " & strOutput 
+        debug params
+
+        objShell.Run "cmd.exe /S /C " & params, 0, True 'waitOnReturn = True and windowStyle = 1'
+        
+        if result=vbYes then
+          Set objInputFile2 = objFSO.OpenTextFile("tempFile.csv", 1)  ' 1 = For Reading
+          if i=0 then
+            Set outFile = objFSO.CreateTextFile(strOutFile, True)
+            debug "Creating file " & strOutFile
+          elseif i=1 then
+            Set outFile = objFSO.OpenTextFile(strOutFile, 8, True ) ' 8 = for appending
+            debug "Opening file "& strOutFile & " for appending."
+          end if
+          '--------------saving the temporary file into the merged file -------------- 
+          strLine1 = objInputFile2.ReadLine
+          If (Left(strLine1, 4)) = Chr(34) & "dn" & Chr(34) And intFiles = 1 Then  ' if yes, this is a header
+              strLineH = Chr(34) & "FileName" & Chr(34) & "," & strLine1
+              
+              outFile.WriteLine Trim(strLineH)
+          End If
+          debug "saving into merged file..."
+          Do While objInputFile2.AtEndOfStream <> True
+            strLine1 = objInputFile2.ReadLine
+            If InStr(strLine1, "Best Match of:") > 0 Then   ' if this texts is found this means there is no output for this query
+              strLine2 = Chr(34) & strLine & Chr(34) & "," & Chr(34) & " No Members Found" & Chr(34)
+              debug strLine2
+              outFile.WriteLine Trim(strLine2)
+            ElseIf strLine1 = "" Then
+              'skipping the save
+            Else
+              strLine2 = Chr(34) & strLine & Chr(34) & "," & Chr(34) & strLine1 & Chr(34) 
+              debug strLine2
+              outFile.WriteLine Trim(strLine2)
+              
+            End If
+            
+          Loop
+          '-------------------------
+          debug "saving completed"
+          
+          if i=0 then outfile.close
+          objInputFile2.close
+          
+        end if
+        i=i+1
+      Loop
+    
+      objInputFile.Close
+      'objInputFile2.close
+      'objInputFile2.DeleteFile "tempFile.csv"
+      'outFile.close
+      
+    End If ' button cancel not pressed
+  
+  msgbox "Script finished, " & i & " files/groups."
+  debug i & " files/groups."
+  document.getElementById("dom").innerHTML =""
+  end if 'file not equal ""
+  debug "End of SelectFileUsrGrp <br> ------------------------ <br>"
+end sub
+'----------------------------------------------------------------------------------------------------------------------------------------------------------------------------'
+'----------------------------------------------------------------------------------------------------------------------------------------------------------------------------'
+
+Sub ListGroupMembers
+  '-----------------------------------------------------------------------------------------------
+  '- Function: Obtain the list of a users that belong to a given group 
+  '- Input: a groupname 
+  '- Output: a filename groupsname.csv
+  '-----------------------------------------------------------------------------------------------
+
+  debug "Start of ListGroupMembers <br> --------------------" 
+  Dim objFSO, outFile, objShell, strBatch
+  Set objFSO = CreateObject("Scripting.FileSystemObject")
+  Set objShell = CreateObject("Wscript.Shell")
+  
+  Group=Textbox5.value
+  if group<>"" then
+    If Left(group, 3) = "CN=" Or Mid(group, 2, 3) = "CN=" Then 'if the full DN is entered make it short name'
+            groupshort = chr(34) & Mid(group, 4, InStr(1, group, ",") - 4) & chr(34)
+            groupname = Mid(group, 4, InStr(1, group, ",") - 4)
+      Else
+            groupshort = chr(34) & group & chr(34)
+            groupname=group
+      End If
+    End if
+  If groupname = "" Then
+    MsgBox ("You must enter a value!")
+  Else
+    'adfind -f name=us-nsh-apps-nsh-insureon_ftp_prod-chg member -list | adfind -c -nocsvheader -csv ' to show the number of members on the group.
+    'adfind -f name=us-nsh-apps-nsh-insureon_ftp_prod-chg member -cv -csvnoq -nocsvheader -csv -nodn
+    
+    'fields=" sAMAccountName sAMAccountType sn givenname mail l description houseidentifier department W-DepartmentLevel1 W-DepartmentLevel2 W-DepartmentLevel3 W-DepartmentLevel4 W-DepartmentLevel5 W-EmployeeStatus company useraccountcontrol whencreated whenChanged lastLogon lastLogonTimestamp pwdLastSet accountExpires "
+  
+    params = "adfind.exe " & FuncDom & " -f name=" & groupshort & " member -list | adfind.exe -tdcas -samdc -csvdelim , -csvxl " & fieldsin & " > " & groupname & ".csv"
+    checks = "adfind.exe " & FuncDom & " -f name=" & groupshort & " dummy -jcsv2 -nodn -csvfinalcount | clip " 'dummy is not meant to exist is to show an empty output and only show object count 
+    debug params
+  
+    objShell.Run "cmd.exe /S /C " & checks, 0, True
+    ' Use the HTML parser to have access to the clipboard and get text content
+    Dim strText : strText = CreateObject("htmlfile").ParentWindow.ClipboardData.GetData("text")
+    debug strText 
+  
+    if instr(strtext,"ObjCount=0") > 0 then   ' the query resulted in no output
+      msgbox("No file created as output is empty or group name does not exist in the domain.")
+    else
+      strBatch = groupname & "-com.bat"
+      Set outFile = objFSO.CreateTextFile(strBatch, True)
+      outFile.WriteLine params 'saving the command into a bat file'
+
+      objShell.Run "cmd.exe /S /C " & params, 0, True
+      MsgBox ("Search Completed, file " & groupname & ".csv created.")
+    End If
+  end if
+  debug "End of ListGroupMembers <br> ------------------------ <br>"
+End Sub
+'----------------------------------------------------------------------------------------------------------------------------------------------------------------------------'
+
+Sub SelectFileGroup   
+  '-----------------------------------------------------------------------------------------------
+  '- Function: Obtain the list of a users that belong to a list of given groups
+  '- Input: a groupname per line on a text file, can be the name or the full DN
+  '- Output: a filename groupsname.csv per group entered
+  '-----------------------------------------------------------------------------------------------
+  
+  'scriptdir = CreateObject("Scripting.FileSystemObject").GetParentFolderName(WScript.ScriptFullName)' --- to check the current folder
+  debug "Start of SelectFileGroup <br> --------------------"  
+  Dim strFile
+  strFile = SelectFile( )
+  Set objFSO = CreateObject("Scripting.FileSystemObject")
+  strOutFile="OutFileGroupsMembers.csv"
+  
+  If strFile = "" Then 
+      MsgBox("No file selected.")
+  Else
+      Result=MsgBox ("File Selected: " & strFile & vbCrLf & "Do you want to save the output into a single consolidated file?" & vbCrLf & "If so click on 'Yes', otherwise Press 'No'.", vbYesNoCancel + vbQuestion)
+      document.getElementById("dom").innerHTML = "Selected file for recursive query of groups: " & strFile
+   
+    Set objInputFile = objFSO.OpenTextFile(strFile)
+    Set objShell = CreateObject("Wscript.Shell")
+    
+    if result <> vbCancel then
+      Do until objInputFile.AtEndofStream
+        
+        group = objInputFile.ReadLine
+        debug "group:" & group
+
+        if group <> "" then
+          If Left(group, 3) = "CN=" Or Mid(group, 2, 3) = "CN=" Then 'if the full DN is entered make it short name'
+            groupshort = chr(34) & Mid(group, 4, InStr(1, group, ",") - 4) & chr(34)
+          Else
+            groupshort = chr(34) & group & chr(34)
+          End If
+        
+          If result=vbYes then
+            strOutput=" > tempFile.csv"
+          else
+            strOutput= " > " & groupshort & ".csv"  'need to add an space to separate the > symbol
+          end if
+
+          params = "adfind.exe " & FuncDom & " -f name=" & groupshort & " member -list | adfind.exe -tdcas -samdc -csvdelim , -csvxl " & fieldsin & strOutput
+          debug params
+
+          objShell.Run "cmd.exe /S /C " & params, 0, True 'waitOnReturn = True and windowStyle = 1'
+        
+          if result=vbYes then
+            debug "opening tempFile.csv"
+            Set objInputFile2 = objFSO.OpenTextFile("tempFile.csv", 1)  ' 1 = For Reading
+            
+            if i=0 then
+              Set outFile = objFSO.CreateTextFile(strOutFile, True)
+              debug "Creating file " & strOutFile
+            elseif i=1 then
+              Set outFile = objFSO.OpenTextFile(strOutFile, 8, True ) ' 8 = for appending
+              debug "Opening file "& strOutFile & " for appending."
+            end if
+            
+            do until objInputFile2.AtEndofStream
+              strLine2 = Chr(34) & groupshort & Chr(34) & ";" & Chr(34) & objInputFile2.ReadLine & Chr(34) 
+              debug strLine2      
+              outFile.WriteLine strLine2
+            loop
+            
+            if i=0 then outfile.close
+            objInputFile2.close
+            
+          end if
+          i=i+1
+        end if
+      Loop
+
+      objInputFile.Close
+
+    msgbox "Script finished, " & i & " groups extracted."
+    debug "Results: " & i & " groups extracted."
+    document.getElementById("dom").innerHTML =""
+    End If 'cancel button
+  End If    ' file not selected
+  debug "End of SelectFileGroup <br> ------------------------ <br>"
+End sub
+'----------------------------------------------------------------------------------------------------------------------------------------------------------------------------'
+'----------------------------------------------------------------------------------------------------------------------------------------------------------------------------'
+
+Sub FindUserID
+  debug "Start of FindUserID <br> --------------------" 
+  Dim objFSO, outFile, objShell
+  Set objFSO = CreateObject("Scripting.FileSystemObject")
+  Set objShell = CreateObject("Wscript.Shell")
+
+  SN=Textbox4.value
+  'fields=" sAMAccountName sAMAccountType sn givenname mail l description houseidentifier department W-DepartmentLevel1 W-DepartmentLevel2 W-DepartmentLevel3 W-DepartmentLevel4 W-DepartmentLevel5 W-EmployeeStatus company useraccountcontrol whencreated whenChanged lastLogon lastLogonTimestamp pwdLastSet accountExpires "
+  
+  If SN = "" Then
+    MsgBox ("You must enter a value!")
+  
+  Else
+    params = "adfind.exe " & FuncDom & " -f " & Chr(34) & "&(objectCategory=person)(sn=" & SN & ")" & Chr(34) & " -tdcas -samdc -csvdelim , -csvxl " & fieldsin & " > " & SN & ".csv"
+    checks = "adfind.exe " & FuncDom & " -f " & Chr(34) & "&(objectCategory=person)(sn=" & SN & ")" & Chr(34) & " -csv -c -nocsvheader | clip "
+    debug params
+    
+    objShell.Run "cmd.exe /S /C " & checks, 0, True
+    ' Use the HTML parser to have access to the clipboard and get text content
+    Dim strText : strText = CreateObject("htmlfile").ParentWindow.ClipboardData.GetData("text")
+    debug strText 
+  
+    if instr(strtext,"0 Objects returned") > 0  then    ' the query resulted in no output
+      msgbox("No users were found with the family name " & SN & " in the domain.")
+      
+    else  
+      strBatch = SN & "-SN-com.bat"
+      Set outFile = objFSO.CreateTextFile(strBatch, True)
+      outFile.WriteLine params 'saving the command into a bat file'
+
+      objShell.Run "cmd.exe /S /C " & params, 0, True
+      MsgBox ("Search Completed, file " & SN & ".csv created.")
+    end if
+  End If
+  debug "End of FindUserID <br> -------------------- <br>"
+End Sub
+'----------------------------------------------------------------------------------------------------------------------------------------------------------------------------'
+'----------------------------------------------------------------------------------------------------------------------------------------------------------------------------'
+
+
+Sub OnScreenQueries
+  debug "Launch On-Screen Queries"
+  Set objShell = CreateObject("Wscript.Shell")
+  objShell.Run "cmd.exe /S /C Rundll32 dsquery.dll OpenQueryWindow", 0, True
+end sub
+
+</script>
+<!----------------------------------------------------------------------------------------------------------------------------------------------------------------------------'
+'----------------------------------------------------------------------------------------------------------------------------------------------------------------------------'
+'----------------------------------------------------------------------------------------------------------------------------------------------------------------------------'
+'---------------------------------------------------------------------------------------------------------------------------------------------------------------------------->
+
+
+<style>
+
+body {
+  font-family: "Lucida Sans Unicode","Lucida Grande", sans-serif;
+  background-color: #2C3E50;
+    border: none;
+  outline: none;
+}
+
+/* Navbar container */
+.navbar {
+  overflow: hidden;
+  background-color: #333;
+}
+/* Items inside the navbar */
+.navbar a {
+  float: left;
+  font-size: 14px;
+  color: white;
+  text-align: center;
+  padding: 14px 16px;
+  text-decoration: none;
+
+}
+/* The dropdown container */
+.dropdown {
+  overflow: hidden;  
+}
+/* Dropdown button */
+.dropdown .dropbtn {
+  font-size: 14px;  
+  border: none;
+  outline: none;
+  color: white;
+  padding: 14px 16px;
+  background-color: #333;
+  font-family: "Lucida Sans Unicode","Lucida Grande", sans-serif;
+  margin: 0; 
+  display: inline-block;
+}
+/* Add a purple background color to navbar links on hover */
+.navbar a:hover, .dropdown:hover .dropbtn {
+  background-color: purple;
+}
+/* Dropdown content (hidden by default) */
+.dropdown-content {
+  display: none;
+  position: absolute;
+  background-color: #f9f9f9;
+  min-width: 160px;
+ /* box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);*/
+  z-index: 1;
+}
+/* items inside the dropdown */
+.dropdown-content a {
+  float: none;
+  color: black;
+  padding: 12px 16px;
+  text-decoration: none;
+  display: block;
+  text-align: left;
+}
+
+/* Add a purple background color to dropdown links on hover */
+.dropdown-content a:hover {
+  background-color: purple;
+  color: white;
+}
+/* Show the dropdown menu on hover */
+.dropdown:hover .dropdown-content {
+  display: block;
+}
+/* panel container */
+.panel {
+  Z-INDEX: 0; 
+  POSITION: relative; 
+  
+  /*BORDER-BOTTOM: white 1px solid; 
+  BORDER-LEFT: white 1px solid; 
+  BORDER-TOP: white 1px solid; 
+  BORDER-RIGHT: white 1px solid;*/ 
+  MARGIN-TOP: -1px; 
+  /*HEIGHT: 200px; == removed because affected the domain dropdown*/ 
+  PADDING-TOP: 5px;
+  PADDING-BOTTOM: 5px; 
+  PADDING-RIGHT: 5px; 
+  PADDING-LEFT: 5px; 
+  DISPLAY: none; 
+  /*border-radius: 5px; == removed because does not work with mshta.exe */
+  background-color: #2C3E50;
+  padding: 20px;
+  font-size: 12px;
+  color: white;
+}
+
+input {
+  position: absolute;
+    left: 18em;
+}
+
+.button {
+  display: inline-block;
+  padding: 5px 15px;
+  font-size: 12px;
+  cursor: pointer;
+  text-align: center;
+  text-decoration: none;
+  outline: none;
+  color: #fff;
+  background-color: purple;
+  border: none;
+  /*border-radius: 15px;*/
+  margin: 4px 2px;
+  cursor: pointer;
+  transition-duration: 0.4s;
+}
+
+.button:hover {
+  background-color: #3e8e41;
+}
+
+.button:active {
+  background-color: #3e8e41;
+  transform: translateY(4px);
+}
+
+</style>
+</head>
+
+<BODY onload=onLoad()>
+
+<div class="navbar">
+  <a href="#panel1" onclick=selPanel(1)>Home</a>
+  <a href="#panel2" onclick=selPanel(2)>Fields</a>
+  <a href="#panel3"  onclick=selPanel(3)>Help</a>
+  <a href="#panel11" onclick=selPanel(4)>Contacts</a>
+  <div class="dropdown">
+    <button class="dropbtn">Search &#11206;</button>
+    <div class="dropdown-content">
+        <a href="#panel4"  onclick=selPanel(5) >Search User</a>
+        <a href="#panel5"  onclick=selPanel(6) >Search Email</a>
+        <a href="#panel6"  onclick=selPanel(7) >Search Shared Email</a>
+        <a href="#panel7"  onclick=selPanel(8) >Search Users' Groups</a>
+        <a href="#panel8"  onclick=selPanel(9) >Search Groups' Members</a>
+        <a href="#panel9"  onclick=selPanel(10) >Search by Family Name</a>
+        <a href="#panel10" onclick=selPanel(11) >On-screen queries</a>
+        
+    </div>
+   </div>
+ 
+</div>
+<!-- ----------------------------------------------------------------------------------------------------------------------- -->
+<!-- ----------------------------------------------------------------------------------------------------------------------- -->
+<!-- ----------------------------------------------------------------------------------------------------------------------- -->
+<!---- ----------------------------------------------------------------------------------------------------------------------- -->
+
+<DIV style="text-align:right;" id=panel0 class=panel cellpadding="0">
+<p id="dom"></p>
+<span id = "ControlsArea"></span>
+</div>
+<!-- ----------------------------------------------------------------------------------------------------------------------- -->
+<!-- ----------------------------------------------------------------------------------------------------------------------- -->
+
+<DIV id=panel1 class=panel cellpadding="0">
+
+<h3>ADFIND</h3>
+<p>Welcome to the ADFind GUI Tool.</p>
+<br>
+<p>This tool allows to query the Network (Active Directory) and produce user access reports amongst other useful information.</p>
+</div>
+<!-- ----------------------------------------------------------------------------------------------------------------------- -->
+<!-- ----------------------------------------------------------------------------------------------------------------------- -->
+
+<DIV id=panel2 class=panel cellpadding="0">
+<span id = "FieldsArea"></span>
+<form id = fieldsform> Select Fields:<br><br>
+<input type="checkbox" checked name="sAMAccountName" value="sAMAccountName">AccountName<br>
+<input type="checkbox" checked name="sAMAccountType" value="sAMAccountType">AccountType<br>
+<input type="checkbox" checked name="sn" value="sn">Family Name<br>
+<input type="checkbox" checked name="givenname" value="givenname">First Name<br>
+<input type="checkbox" checked name="mail" value="mail">email<br>
+<input type="checkbox" checked name="l" value="l">Location<br>
+<input type="checkbox" checked name="co" value="co">Country<br>
+<input type="checkbox" checked name="description" value="description">Description<br>
+<input type="checkbox" checked name="houseidentifier" value="houseidentifier">HouseIdentifier<br>
+<input type="checkbox" checked name="department" value="department">Department<br>
+<input type="checkbox" checked name="W-DepartmentLevel1" value="W-DepartmentLevel1">W-DepartmentLevel1 (from Oracle HR Cloud)<br>
+<input type="checkbox" checked name="W-DepartmentLevel2" value="W-DepartmentLevel2">W-DepartmentLevel2 (from Oracle HR Cloud)<br>
+<input type="checkbox" checked name="W-DepartmentLevel3" value="W-DepartmentLevel3">W-DepartmentLevel3 (from Oracle HR Cloud)<br>
+<input type="checkbox" checked name="W-DepartmentLevel4" Value="W-DepartmentLevel4">W-DepartmentLevel4 (from Oracle HR Cloud)<br>
+<input type="checkbox" checked name="W-DepartmentLevel5" value="W-DepartmentLevel5">W-DepartmentLevel5 (from Oracle HR Cloud)<br>
+<input type="checkbox" checked name="company" value="company">Company<br>
+<input type="checkbox" checked name="manager" value="manager">Manager<br>
+<input type="checkbox" checked name="W-EmployeeStatus" value="W-EmployeeStatus">Employee Status (From Oracle HR Cloud)<br>
+<input type="checkbox" checked name="W-EmployeeStartDate" value="W-EmployeeStartDate">Employee start Date (From Oracle HR Cloud)<br>
+<input type="checkbox" checked name="useraccountcontrol" value="useraccountcontrol">UserAccountControl (active/locked/disabled/etc.)<br>
+<input type="checkbox" checked name="whencreated" value="whencreated">WhenCreated<br>
+<input type="checkbox" checked name="whenChanged" value="whenChanged">WhenChanged<br>
+<input type="checkbox" checked name="lastLogon" value="lastLogon">Last Logon<br>
+<input type="checkbox" checked name="lastLogonTimestamp" value="lastLogonTimestamp">last Logon Timestamp<br>
+<input type="checkbox" checked name="pwdLastSet" value="pwdLastSet">Last Password Set on<br>
+<input type="checkbox" checked name="accountExpires" value="accountExpires">Account Expires on<br>
+</form>
+</div>
+<!-- ----------------------------------------------------------------------------------------------------------------------- -->
+<!-- ----------------------------------------------------------------------------------------------------------------------- -->
+
+<DIV id=panel3 class=panel cellpadding="0">
+<span id = "HelpArea"></span>
+The help section is in development - see file ADFind PowerPoint guide.<br>
+<br><br>
+<u>What's New:</u><br>
+v2.0 launched on 12/2018 a HTML version due to incompatibility issues on Excel version. <br>
+v2.1 launched on 13/02/2019 refreshed version with consolidated search on multiple domains and select fields for output. Added menu to navigate options. <br>
+v2.2 launched on 14/02/2019 refreshed displayed GUI. Minor bugs corrected. <br>
+v2.3 launched on 21/06/2019 added the output file of the command to execute from command line. <br>
+v2.3.1 launched on 17/07/2019 added option to export all users or Search by User ID. <br>
+v2.3.2 Beta launched on 27/08/2019 added the domain names dynamically. <br>
+v2.3.3 Beta launched on 29/08/2019 added the option to load a list of users. <br>
+v2.3.4 Beta launched on 03/10/2019 added the option to load a list of emails and groups to query multiple items at once. <br>
+v2.4.1 launched on 14/10/2019 added additional load a file option for userIDs to query multiple items and solve some bugs found on beta testing. <br>
+v2.4.2 launched on 10/01/2020 added an option to create a consolidated file instead of multiple outputs files, <br>
+                  also added a debugging window to see the outputs whilst program is running, <br>
+                and changed the default domain to INT.<br>
+v2.4.3 launched on 18/02/2020 added the new available field in AD from Oracle HR Cloud (W-EmployeeStartDate) <br> 
+v2.5.1 beta launched on 15/04/2020 - added a check that the values entered exist then ignores file creation of empty outputs (only for single searches/queries), <br> 
+                                   - removed the black screens pop-ups when running the queries;<br> 
+                                   - removed the need to click on Select when selecting different domains; and<br> 
+                                   - added new search option to check members of a shared email account.<br>
+v2.6 Launched on xx/05/2020 - Major GUI re-design (feel and look) including dark mode; <br>
+                            - Added two additional fields: Manager and Country;<br>
+                            - Removed Debug Window and added log output file. <br>
+
+<br><br>
+<u>Known Issues and Next Versions</u>
+<br>
+
+<ul>
+  <li> Validation of entered fields is incomplete, i.e. no validation that the email is correctly formatted (only checking for empty values);</li>
+  <li> Show results in the screen; </li>
+  <li> Show message if empty results and do not create a file (for load file queries); </li>
+  <li> Add an option to list and add default and custom AD fields; </li>
+  <li> Add option to query by the 5 department levels from Oracle HR Cloud; </li>
+  <li> Add option to query by the Country and/or City; </li>
+  <li> Add expert queries for IT Auditors; </li>
+  <li> Add recursive query across all domains;  </li>
+  <li> Add feature to check and expand the domains listed; and </li>
+  <li> Add a digital MD5 signature message to ensure that the file is unaltered. </li>
+
+</div>
+
+<!-- ----------------------------------------------------------------------------------------------------------------------- -->
+<!-- ----------------------------------------------------------------------------------------------------------------------- -->
+
+<DIV id=panel4 class=panel cellpadding="0">
+
+<span id = "ContactArea"></span>
+<H3>Contacts and suggestions</H3>
+<br>
+For questions, feedback and tailored queries contact: <br>
+Luis Bernardi<br>
++33 6 30 94 10 97<br>
++44 7 841 362 864<br>
+<a href = "SIP:luis.bernardi@grassavoye.com">Click to chat via Skype</a><br>
+<a href = "mailto:luis.bernardi@grassavoye.com?subject='Feedback on ADFind GUI tool' "> luis.bernardi@grassavoye.com </a>
+</div>
+<!-- ----------------------------------------------------------------------------------------------------------------------- -->
+<!-- ----------------------------------------------------------------------------------------------------------------------- -->
+<!-- ----------------------------------------------------------------------------------------------------------------------- -->
+<!-- ----------------------------------------------------------------------------------------------------------------------- -->
+<!-- ----------------------------------------------------------------------------------------------------------------------- -->
+<!-- ----------------------------------------------------------------------------------------------------------------------- -->
+
+
+<DIV id=panel5 class=panel cellpadding="0">
+
+<H3>Search User</H3>
+<br>
+Search by User ID:  <input type="text" name="Textbox" size="12"><br><br> (enter * for all users, this will take a while).<br><br>
+<button class="button" onclick="ListUser">Search</button>
+<button class="button" onclick="SelectFileUser">Load File</button><br><br>
+</div>
+<!-- ----------------------------------------------------------------------------------------------------------------------- -->
+<!-- ----------------------------------------------------------------------------------------------------------------------- -->
+<DIV id=panel6 class=panel cellpadding="0">
+
+<H3>Search Email</H3>
+<br>
+Search by Email:  <input type="text" name="Textbox2" size="45"><br><br>
+<button class="button"  onclick="ListEmail">Search</button>
+<button class="button"  onclick="SelectFileEmail">Load File</button><br><br> 
+</div>
+
+<!-- ----------------------------------------------------------------------------------------------------------------------- -->
+<!-- ----------------------------------------------------------------------------------------------------------------------- -->
+<DIV id=panel7 class=panel cellpadding="0">
+
+<H3>Search Shared Email Inbox</H3>
+<br>
+Search by Shared Email box:  <input type="text" name="Textbox6" size="45" ><br><br>
+<button class="button"  onclick="FindSharedEmail" >Search</button><br><br>
+</div>
+<!-- ----------------------------------------------------------------------------------------------------------------------- -->
+<!-- ----------------------------------------------------------------------------------------------------------------------- -->
+
+<DIV id=panel8 class=panel cellpadding="0">
+
+<H3>Search User to get group names</H3>
+<br>
+
+ Search User to get group names:  <input type="text" name="Textbox3" size="12" ><br><br>
+ <button class="button"  onclick="ListUserGroup" >Search</button>
+ <button class="button"  onclick="SelectFileUsrGrp" >Load File</button><br><br>
+</div>
+<!-- ----------------------------------------------------------------------------------------------------------------------- -->
+<!-- ----------------------------------------------------------------------------------------------------------------------- -->
+
+<DIV id=panel9 class=panel cellpadding="0">
+
+
+<H3>Search Group to get members</H3>
+<br>
+Search Group to get members:  <input type="text" name="Textbox5" size="45"><br><br>
+<button class="button"  onclick="ListGroupMembers" >Search</button>
+<button class="button"  onclick="SelectFileGroup" >Load File</button><br><br>
+</div>
+<!-- ----------------------------------------------------------------------------------------------------------------------- -->
+<!-- ----------------------------------------------------------------------------------------------------------------------- -->
+
+<DIV id=panel10 class=panel cellpadding="0">
+
+
+<H3>Search User by Family name</H3>
+<br>
+Search by Family name:  <input type="text" name="Textbox4" size="45" ><br><br>
+<button class="button"  onclick="FindUserID" >Search</button><br><br>
+</div>
+<!-- ----------------------------------------------------------------------------------------------------------------------- -->
+<!-- ----------------------------------------------------------------------------------------------------------------------- -->
+
+<DIV id=panel11 class=panel cellpadding="0">
+
+<H3>Call program for on-screen queries (DSQuery command)</H3>
+<br>
+ <br>For on-screen queries:<br>
+ <button class="button"  onclick="OnScreenQueries" >Search</button><br>
+</div>
+
+</body>
+</html>
